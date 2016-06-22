@@ -1,0 +1,18 @@
+[3/5] Phase 2: BATTLE
+
+Make your house look better
+by vandalizing the other one.
+
+Controlling a unit:
+  „…†‡: Move
+  A: Use weapon or control
+    missile silo
+  B: Pick up or put down item
+  B+A or Select:
+    Switch to next unit
+Controlling a missile silo:
+  „…†‡: Move target
+  A: Fire  B: Back
+
+Carry stolen furniture back
+home to steal more.

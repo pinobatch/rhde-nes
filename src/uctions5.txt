@@ -1,0 +1,14 @@
+[5/5] Credits
+
+Concept by NovaSquirrel
+Program by Pino P.
+VWF renderer optimized
+  by Blargg
+Graphics by Pino and Nova
+Sound by Pino, Ivan Larionov,
+  and The Eighth Bit
+Tools by Pino
+Made with Xubuntu, Python,
+  cc65, and GIMP
+Greets to EFnet #nesdev,
+  forums.nesdev.com

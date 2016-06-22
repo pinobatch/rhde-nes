@@ -1,0 +1,47 @@
+html { background: #070 url('grass_bg.png') fixed; }
+body { background: #fff; color: #000; max-width: 29em; margin: 0 auto; padding: 0 1.5em 0.5em; font-family: sans-serif; box-shadow: 0 0 2em #000 }
+h1 { margin: 0 -1.5rem 1rem; color: #0F0; background: #000; padding: 0 0 1rem }
+h2,h3,h4,h5,h6,ul,ol,dl,p { margin: 0.75em 0 0.5em }
+h1>img { display: block; width: 100% }
+h1>img.withsky { background: #cfd0fe; padding: 2rem 0 0 }
+
+ul,ol { padding-left: 1.5em }
+dd { margin-left: 1.5em; margin-bottom: 0.1em }
+li { margin: 0.1em 0 }
+h2 { border-bottom: 1px solid #999 }
+#tocbox { margin: 0.5em 0; border: 1px solid #999; padding: 0.5em 1em; background: #f2f2f2 }
+#tocbox>h2 { font-size: 1.25em; margin-top: 0 }
+#tocbox li ol { margin: 0 }
+dl>dt { font-weight: bold }
+
+.rfigure { display: block; float: right; clear: right; margin: 0 0 0.5em 1em }
+.rfigure>img { display: block; max-width: 100% }
+
+/* portable alternative to DL COMPACT */
+/* Incorporates after fix per http://css-tricks.com/snippets/css/clear-fix/ */
+dl.compact { display: inline-block; width: 90%; padding: 0 5%; margin: 0 }
+dl.compact:after {
+  visibility: hidden; display: block; font-size: 0; clear: both; height: 0
+}
+dl.compact dt { float: left; clear: both; width: 30% }
+dl.compact dd { float: right; clear: right; margin-left: 0; width: 70% }
+
+
+div.controldiagram { position: relative; float: right; clear: right; margin: 0 0 0.5em 1em; width: 14em; height: 7em }
+div.controldiagram img.gamepad { display: block; width: 14em; height: 7em }
+/* We want this to show up when copied to clipboard, but not when displayed. Using display:none or visibility:hidden or height: 0px removes the element entirely from the copied text. So instead, use height: 1px */
+div.controldiagram dt { overflow: hidden; height: 1px }
+div.controldiagram dd { position: absolute; font-size: 87.5%; margin-left: 0; color: #fff; text-shadow: 0.05em 0.1em 0.1em #000, 0 0 0.4em #000 }
+div.controldiagram dd.a_button { right: 1.5em; bottom: 5.3em; text-align: right }
+div.controldiagram dd.b_button { right: 2em; top: 5.7em; text-align: right }
+div.controldiagram dd.up_button { left: 0; bottom: 5.7em; width: 8em; text-align: center }
+div.controldiagram dd.down_button { left: 0; width: 8em; text-align: center; top: 5.7em }
+div.controldiagram dd.left_button { left: 0em; top: 3.4em }
+div.controldiagram dd.right_button { right: 8em; top: 3.4em }
+
+/* on narrow devices like phones */
+@media (max-width: 24em) {
+/* move insets to center */
+rfigure, div.controldiagram { float: none; margin: 0.5em auto }
+}
+

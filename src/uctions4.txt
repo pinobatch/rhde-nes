@@ -1,0 +1,18 @@
+[4/5] Phase 3a: BUILD
+
+Patch up walls with blocks
+and expand your house.
+
++ Move  B: Turn  A: Place
+
+More area means more money
+to buy more furniture.
+
+Phase 3b: MAKE DOORS
+
+Add doors to your house
+to make it easier to get
+in and out.
+
++ Move
+A: Place door or prune wall

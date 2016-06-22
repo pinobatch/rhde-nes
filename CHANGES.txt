@@ -1,0 +1,64 @@
+Day 3xx (2015-10-xx)
+* Cap raised to 8 rockets per side
+* Replaced build phase music
+
+Day 342 (2014-07-19)
+* Easier for units to pick up bat or rug near wall
+* Code size micro-optimizations begin
+* "DRAW!" is centered
+* Press Start to pause any timed round
+
+Day 327 (2014-07-03)
+* Added menu to title screen
+* Removed change log from in-game instructions
+* Skips furnish phase if neither side has beds
+* Item picked up and not placed appears in Stock without having
+  to go to Shop and back
+* Left- or right-justifies furnish winner notice
+* Grass is greener on winner's side
+* Fixed bat's hitbox being too small on the east and south sides
+* Goes to title screen after 5 or 10 wins if not endless
+
+Day 317 (2014-06-23)
+* Less MS Painty title screen saves 2K of ROM
+* Door or fence tile hit 3 times with bat breaks
+* Unit hit with bat gets stunned for 2 s and drops carried furni
+* B+A skips stunned units
+* Unit hit 3 times faints and drops weapon
+* Missiles destroy flowers
+* Bounds-checks item IDs when drawing Shop and Stock
+* Fixed automatic pickup of side-by-side flowers
+* Fixed OBO allowing player 2 to cross player 1's door
+* Title screen in manual
+
+Day 309 (2014-06-16)
+* Shows each round's winner
+* Counts won rounds
+* Shows item each unit carries
+* B: Pick up dropped item
+* After combat, dropped items belong to player on same side of the road
+* Made attack and stun frames
+* A while holding bat: Swing
+* Draws HP meter above stunned unit
+
+Day 299 (2014-06-06)
+* Shows a lock over tiles that only the opponent can pass
+* Sell item in Stock (B+A)
+* New title screen
+* Can pick up the item you're standing on
+* B: Drop item (unfinished)
+
+Day 278 (2014-05-15)
+* Randomized starting location
+* Shop: Beeps and slides item up after buying
+* Shop: B leaves
+* Pickup: Hand truck cursor
+* Battle: Select switches units
+* Plays page turn sound when switching units
+* Beeps when silo has cooled
+* Tolerates vertical mirroring
+* Manual is HTML
+* Source code is available
+
+Compo version (2014-05-01)
+* initial release

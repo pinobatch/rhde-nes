@@ -1,0 +1,20 @@
+== Low priority ==
+
+Keep watching for recurrence of this bug: Down in Stock produced a line of 255s
+furnistock: Pickup with correct grass tile
+HRA: Divide scanning time into frame-sized units
+More than 12 cannons per side active, more than 6 rockets per side
+During battle, the loser of the previous furnish phase gets brown grass
+
+== For 64K version ==
+
+Single-player scripted tutorial
+Add RPG weapon: draw item, set price, add to shop, draw sprites for using it, aim and fire, collide with walls
+Placing garbage bags on the opponent's side to interfere with other player's Build
+More families than just 3, one with female units (Sara will design)
+Pick each side's color
+Stock: When 4 or fewer items are owned, draw the name of the selected item on line 4 (requested by tpw_rules)
+
+== For Genesis/Super NES version ==
+
+Make furniture more colorful

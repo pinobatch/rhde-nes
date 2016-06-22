@@ -1,0 +1,23 @@
+[2/5] Phase 1: FURNISH
+
+Shop: Buy furniture
+  „…: Select item  A: Buy
+  †,B: Go to Stock
+Stock: Add it to your house
+  „…†‡: Select item
+  A: Place  B+A: Sell
+  „: Go to Pickup
+  ‡: Go to Shop
+
+Nothing costs more than
+€200, so save up.
+
+After this phase, the game
+rates the furniture in your
+house. You get more points
+for placing certain furniture
+by walls and for complete
+sets of related furniture
+(such as all kitchen items).
+More beds mean more units
+for battle, up to three.
