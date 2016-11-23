@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Lookup table generator for Concentration Room
 # Copyright 2010 Damian Yerrick
@@ -8,8 +8,14 @@
 # provided the copyright notice and this notice are preserved.
 # This file is offered as-is, without any warranty.
 #
-from __future__ import with_statement, division
+from __future__ import with_statement, division, print_function
 import sys
+
+# This is a polyglot py2/py3 program
+try:
+    xrange
+except NameError:
+    xrange = range
 
 baseNoteFreq = 55.0
 ntscFreq = 39375000.0/(22 * 16)
@@ -99,16 +105,19 @@ tableNames = {
 
 def main(argv):
     if len(argv) >= 2 and argv[1] in ('/?', '-?', '-h', '--help'):
-        print "usage: %s TABLENAME FILENAME" % argv[0]
-        print "known tables:", ' '.join(sorted(tableNames))
+        print("usage: %s TABLENAME FILENAME" % argv[0])
+        print("known tables:", ' '.join(sorted(tableNames)))
     elif len(argv) < 3:
-        print "mktables: too few arguments; try %s --help" % argv[0]
+        print("mktables: too few arguments; try %s --help" % argv[0],
+              file=sys.stderr)
+        sys.exit(1)
     elif argv[1] in tableNames:
         tableNames[argv[1]](argv[2])
     else:
-        print "mktables: no such table %s; try %s --help" % (argv[1], argv[0])
+        print("mktables: no such table %s; try %s --help" % (argv[1], argv[0]),
+              file=sys.stderr)
+        sys.exit(1)
 
 if __name__=='__main__':
     main(sys.argv)
 ##    main(['mkperiods.py', 'htmlperiod', 'out.html'])
-

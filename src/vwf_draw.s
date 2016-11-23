@@ -19,7 +19,7 @@
 .export vwfGlyphWidth, vwfStrWidth, vwfStrWidth0
 .export clearLineImg, copyLineImg, lineImgBuf, invertTiles
 .exportzp lineImgBufLen
-.import chrData, chrWidths
+.import vwfChrData, vwfChrWidths
 
 VWF_TEST = 1
 
@@ -95,7 +95,7 @@ chrstarts:
   asl a     ; 5 4321 076-
   tay
   and #%00000111
-  adc #>chrData
+  adc #>vwfChrData
   sta tileAddr+1
   tya
   and #%11111000
@@ -310,7 +310,7 @@ loop:
   cmp #32
   bcc bail
   tax
-  lda chrWidths-32,x
+  lda vwfChrWidths-32,x
   clc
   adc width
   sta width
@@ -327,7 +327,7 @@ bail:
 ; out: A = columns containing a bit; X: pen-advance in pixels
 .proc vwfGlyphWidth
   tay
-  ldx chrWidths-32,y
+  ldx vwfChrWidths-32,y
   getTileAddr
   ldy #7
   lda #0
@@ -373,7 +373,7 @@ isSpace:
   inc str+1
 :
   tax
-  lda chrWidths-32,x
+  lda vwfChrWidths-32,x
   clc
   adc horz
   sta horz

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 
 savtool
@@ -8,20 +8,16 @@ by Damian Yerrick
 See versionText for version and copyright information.
 
 """
-from __future__ import with_statement, division, print_function
-import sys
-import os
+from __future__ import with_statement, division, print_function, unicode_literals
+import sys, os, re
 try:
     from PIL import Image, ImageChops
 except ImportError:
-    print("%s: warning: Python Imaging Library not installed" % os.path.basename(sys.argv[0]),
+    print("%s: warning: Pillow (Python Imaging Library) not installed" % os.path.basename(sys.argv[0]),
           file=sys.stderr)
     Image = None
-from array import array
-from binascii import a2b_hex, b2a_hex
-import re  # for isxdigit
 
-default_palette = '\x0F\x00\x10\x30\x0F\x06\x16\x26\x0F\x1A\x2A\x3A\x0F\x02\x12\x22'
+default_palette = b'\x0F\x00\x10\x30\x0F\x06\x16\x26\x0F\x1A\x2A\x3A\x0F\x02\x12\x22'
 
 # Command line parsing and help #####################################
 #
@@ -29,9 +25,9 @@ default_palette = '\x0F\x00\x10\x30\x0F\x06\x16\x26\x0F\x1A\x2A\x3A\x0F\x02\x12\
 # program self-documenting and resilient to bad input.
 
 usageText = "usage: %prog [options] [-i] INFILE [-o] OUTFILE"
-versionText = """%prog 0.04
+versionText = """%prog 0.04.3
 
-Copyright 2012 Damian Yerrick
+Copyright 2012-2015 Damian Yerrick
 Copying and distribution of this file, with or without
 modification, are permitted in any medium without royalty provided
 the copyright notice and this notice are preserved in all source
@@ -188,7 +184,7 @@ def parse_argv(argv):
     # Fill unfilled roles with positional arguments
     pos = iter(pos)
     try:
-        infilename = options.infilename or pos.next()
+        infilename = options.infilename or next(pos)
     except StopIteration:
         if options.swatchfilename:
             infilename = None
@@ -206,7 +202,7 @@ def parse_argv(argv):
         intype = None
 
     try:
-        outfilename = options.outfilename or pos.next()
+        outfilename = options.outfilename or next(pos)
     except StopIteration:
         if options.show:
             outtype = 'bmp'
@@ -226,10 +222,11 @@ def parse_argv(argv):
 
     # make sure no trailing arguments
     try:
-        pos.next()
-        parser.error("too many filenames")
+        next(pos)
     except StopIteration:
         pass
+    else:
+        parser.error("too many filenames")
 
     # look for mutually conflicting options
     if options.chrfilename:
@@ -326,10 +323,8 @@ def get_scrolled_nametable(four_screens, xscroll, yscroll):
              for screen in four_screens]
     attrs = [l + r
              for (l, r) in zip(attrs[0] + attrs[2], attrs[1] + attrs[3])]
-    attrs = [([((ord(c) >> 0) & 0x03, (ord(c) >> 2) & 0x03)
-               for c in row],
-              [((ord(c) >> 4) & 0x03, (ord(c) >> 6) & 0x03)
-               for c in row])
+    attrs = [([((c >> 0) & 0x03, (c >> 2) & 0x03) for c in row],
+              [((c >> 4) & 0x03, (c >> 6) & 0x03) for c in row])
              for row in attrs]
     attrs = [[subcol for byte in subrow for subcol in byte]
              for row in attrs for subrow in row]
@@ -347,12 +342,10 @@ def get_scrolled_nametable(four_screens, xscroll, yscroll):
     # reassemble attributes
     attrs = [[row[i] | (row[i + 1] << 2) for i in range(0, 16, 2)]
              for row in attrs]
-    attrs = [[tc | (bc << 4) for (tc, bc) in zip(t, b)]
+    attrs = [bytes(tc | (bc << 4) for (tc, bc) in zip(t, b))
              for (t, b) in zip(attrs[0::2], attrs[1::2])]
-    attrs = "".join(chr(c) for row in attrs for c in row)
-
-    ntrows.append(attrs)
-    return "".join(ntrows)
+    ntrows.extend(attrs)
+    return b"".join(ntrows)
 
 def load_ppu(filename, pattable_base=0, xscroll=0, yscroll=0):
     """Load a PPU dump and convert it to SAV format."""
@@ -363,8 +356,8 @@ def load_ppu(filename, pattable_base=0, xscroll=0, yscroll=0):
     nametables = [data[i + 0x2000:i + 0x2400] for i in range(0, 0x1000, 0x400)]
     nametable = get_scrolled_nametable(nametables, xscroll, yscroll)
     palette = data[0x3F00:0x3F20]
-    return ''.join([bgchr, spritechr, nametable,
-                    '\xFF'*0x300, palette, '\000'*0xE0])
+    return b''.join([bgchr, spritechr, nametable,
+                    b'\x00'*0x300, palette, b'\000'*0xE0])
 
 def load_sav(filename):
     with open(filename, 'rb') as infp:
@@ -373,30 +366,30 @@ def load_sav(filename):
 def load_chr(filename):
     with open(filename, 'rb') as infp:
         data = infp.read(4096)
-    return data + '\xFF' * (4096 - len(data))
+    return data + b'\xFF' * (4096 - len(data))
 
 def load_chr_as_sav(filename):
     """Load a CHR file and provide a suitable default nametable for --show."""
-    charparts = [load_chr(filename), '\x00'*2048]
-    fakenam = ['\x00' * (32 * 6)]
-    for i in xrange(0, 256, 16):
-        fakenam.extend(('\x00'*8, ''.join(chr(c) for c in xrange(i, i + 16)), '\0'*8))
-    fakenam.append('\x00' * (32 * 10))
-    fakenam = ''.join(fakenam)
-    assert len(fakenam) == 1024
-    charparts.extend((fakenam, '\x00' * 768, default_palette, '\x00' * 240))
-    charparts = ''.join(charparts)
-    assert len(charparts) == 8192
-    return charparts
+    sav = bytearray(load_chr(filename)) + bytearray(4096)
+
+    # Generate a nametable starting at (8, 6)
+    offset = 6144 + 32 * 6 + 8
+    for i in range(0, 256, 16):
+        sav[offset:offset + 16] = range(i, i + 16)
+        offset += 32
+
+    # Poke in the palette
+    sav[-256:-224] = default_palette * 2
+    assert len(sav) == 8192
+    return sav
 
 def load_nam(filename):
     with open(filename, 'rb') as infp:
         namdata = infp.read(1024)
-    sav = ''.join(('\xFF' * 0x1800,
-                   namdata,
-                   '\xFF' * 768,
-                   default_palette, default_palette,
-                   '\xFF' * 224))
+    sav = bytearray(8192)
+    sav[6144:7168] = namdata
+    sav[-256:-224] = default_palette * 2
+    assert len(sav) == 8192
     return sav
 
 # Bitmap image loading ##############################################
@@ -408,13 +401,11 @@ def bitmap_to_sav(im):
     (w, h) = im.size
     im = pilbmp2chr(im, 8, 8)
 
-    if len(im) <= 256:
-        # smaller than 16384 pixels: output as a tile sheet
-        # with a blank nametable
-        chrdata = ''.join(im)
-        namdata = '\xFF' * 960 + '\x00' * 64
-    else:
-        from array import array
+    namdata = bytearray([0xFF] * 960)
+    namdata.extend([0x00] * 64)
+    # If smaller than 16384 pixels, output as a tile sheet
+    # with a blank nametable
+    if len(im) > 256:
         im, linear_namdata = dedupe_chr(im)
         if len(im) > 256:
             raise IndexError("image has %d distinct tiles, which exceeds 256"
@@ -424,30 +415,27 @@ def bitmap_to_sav(im):
         topborder = (31 - height_in_tiles) // 2
         leftborder = (32 - width_in_tiles) // 2
         rightborder = 32 - width_in_tiles - leftborder
-        namdata = array('B', '\xFF' * (32 * topborder))
+        offset = topborder * 32 + leftborder
         for i in range(0, len(linear_namdata), width_in_tiles):
-            namdata.fromstring('\xFF' * leftborder)
-            namdata.extend(linear_namdata[i:i + width_in_tiles])
-            namdata.fromstring('\xFF' * rightborder)
-        namdata.fromstring('\xFF' * (960 - len(namdata)))
-        namdata.fromstring('\x00' * 64)
-        namdata = namdata.tostring()
+            namdata[offset:offset + width_in_tiles] = linear_namdata[i:i + width_in_tiles]
+            offset += 32
         assert len(namdata) == 1024
 
-    chrdata = ''.join(im)
-    chrdata = chrdata + '\xFF' * (4096 - len(chrdata))
+    chrdata = b''.join(im)
+    chrpad = b'\xFF' * (6144 - len(chrdata))
 
-    sav = ''.join((chrdata,
-                   '\xFF' * 2048,
-                   namdata,
-                   '\xFF' * 768,
-                   default_palette, default_palette,
-                   '\xFF' * 224))
+    assert len(chrdata) <= 4096
+    assert len(chrdata) + len(chrpad) == 6144
+    assert len(namdata) == 1024
+    sav = b''.join((chrdata, chrpad,
+                    namdata, b'\xFF' * 768,
+                    default_palette, default_palette, b'\xFF' * 224))
+    assert len(sav) == 8192
     return sav
 
 def ensure_pil():
     if not Image:
-        print("%s: error: PIL not installed" % os.path.basename(sys.argv[0]),
+        print("%s: error: Pillow not installed" % os.path.basename(sys.argv[0]),
               file=sys.stderr)
         sys.exit(1)
 
@@ -459,7 +447,7 @@ def load_bitmap(filename):
 # Rendering .sav file to bitmap #####################################
 
 # Bisqwit's palette
-bisqpal = a2b_hex(
+bisqpal = bytes.fromhex(
     '656565002d69131f7f3c137c600b62730a37710f075a1a00'
     '3428000b3400003c00003d10003840000000000000000000'
     'aeaeae0f63b34051d07841cca736a9c03470bd3c309f4a00'
@@ -478,8 +466,7 @@ def sliver_to_texels(lo, hi):
 
 def tile_to_texels(chrdata):
     _stt = sliver_to_texels
-    _o = ord
-    return [_stt(_o(a), _o(b)) for (a, b) in zip(chrdata[0:8], chrdata[8:16])]
+    return [_stt(a, b) for (a, b) in zip(chrdata[0:8], chrdata[8:16])]
 
 def add_attr_to_texels(texels, attr):
     attr = attr * 4
@@ -494,11 +481,10 @@ def texels_to_pil(texels, tile_width=16):
     r8 = range(8)
     texels = [texels[i:i + tile_width]
               for i in range(0, len(texels), tile_width)]
-    texels = ["".join(chr(c)
-                      for tile in row for c in tile[y])
+    texels = [bytes(c for tile in row for c in tile[y])
               for row in texels for y in range(8)]
-    im = Image.fromstring('P', (8 * tile_width, len(texels)), ''.join(texels))
-    im.putpalette('\x00\x00\x00\x66\x66\x66\xb2\xb2\xb2\xff\xff\xff'*64)
+    im = Image.fromstring('P', (8 * tile_width, len(texels)), b''.join(texels))
+    im.putpalette(b'\x00\x00\x00\x66\x66\x66\xb2\xb2\xb2\xff\xff\xff'*64)
     return im
 
 def decode_attribute_table(attrs):
@@ -508,10 +494,8 @@ def decode_attribute_table(attrs):
     
     # linearize attributes
     attrs = [attrs[i:i + 8] for i in range(0, 64, 8)]
-    attrs = [([((ord(c) >> 0) & 0x03, (ord(c) >> 2) & 0x03)
-               for c in row],
-              [((ord(c) >> 4) & 0x03, (ord(c) >> 6) & 0x03)
-               for c in row])
+    attrs = [([((c >> 0) & 0x03, (c >> 2) & 0x03) for c in row],
+              [((c >> 4) & 0x03, (c >> 6) & 0x03) for c in row])
              for row in attrs]
     attrs = [[subcol for byte in subrow for subcol in byte]
              for row in attrs for subrow in row]
@@ -520,33 +504,33 @@ def decode_attribute_table(attrs):
 def render_bitmap(sav):
     chrdata = sav[0x0000:0x1000]
     palette = sav[0x1F00:0x1F20]
-    rgbpalette = [bisqpal[ord(c) & 0x3F] for c in palette]
+    rgbpalette = [bisqpal[c & 0x3F] for c in palette]
     tiles = chrbank_to_texels(chrdata)
     nam = sav[0x1800:0x1C00]
     attrs = decode_attribute_table(nam[0x3C0:])
     r2 = (0,1)
     attrs = [[c for c in row for i in r2] for row in attrs for i in r2]
-    nam = [[ord(c) for c in nam[i:i + 32]] for i in range(0, 960, 32)]
+    nam = [nam[i:i + 32] for i in range(0, 960, 32)]
     tile = add_attr_to_texels(tiles[nam[2][3]], attrs[2][3])
     colortiles = [add_attr_to_texels(tiles[tn], cs)
                   for (nr, ar) in zip(nam, attrs) for (tn, cs) in zip(nr, ar)]
     im = texels_to_pil(colortiles, 32)
-    im.putpalette(''.join(rgbpalette) * 8)
+    im.putpalette(b''.join(rgbpalette) * 8)
     return im
 
 def render_tilesheet(sav, colorset):
     chrdata = sav[0x0000:0x1000]
     palette = sav[0x1F00:0x1F20]
-    rgbpalette = [bisqpal[ord(c) & 0x3F] for c in palette]
+    rgbpalette = [bisqpal[c & 0x3F] for c in palette]
     tiles = texels_to_pil(chrbank_to_texels(chrdata))
     subpal = rgbpalette[0:1] + rgbpalette[colorset*4+1:colorset*4+4]
-    tiles.putpalette(''.join(subpal) * 64)
+    tiles.putpalette(b''.join(subpal) * 64)
     return tiles
 
 # Remapping a picture to use another .chr file ######################
 
 def tile_is_blank(tile):
-    blankplanes = ('\xFF'*8, '\x00'*8)
+    blankplanes = (b'\xFF'*8, b'\x00'*8)
     return (tile[0:8] in blankplanes and tile[8:16] in blankplanes)
 
 def remap_sav_to_chr(srcsav, dstsheet):
@@ -564,7 +548,7 @@ def remap_sav_to_chr(srcsav, dstsheet):
         dstseen.setdefault(t, i)
 
     # find all tiles in srctileset that are not in dsttileset
-    spaces_needed = sorted((i, t) for (t, i) in srcseen.iteritems()
+    spaces_needed = sorted((i, t) for (t, i) in srcseen.items()
                            if t not in dstseen)
 
     # Find candidates for replacement within the new tile sheet by
@@ -588,10 +572,9 @@ def remap_sav_to_chr(srcsav, dstsheet):
         dsttiles[dsttilenum] = tiledata
         dstseen[tiledata] = dsttilenum
 
-    nam = array('B', srcsav[0x1800:0x1BC0])
-    newnam = array('B', (dstseen[srctiles[i]] for i in nam))
-    return "".join(("".join(dsttiles),
-                    srcsav[0x1000:0x1800], newnam.tostring(), srcsav[0x1BC0:]))
+    newnam = bytearray(dstseen[srctiles[i]] for i in srcsav[0x1800:0x1BC0])
+    return b''.join((b''.join(dsttiles),
+                    srcsav[0x1000:0x1800], newnam, srcsav[0x1BC0:]))
 
 # Rounding a bitmap toward a given palette ##########################
 
@@ -600,6 +583,8 @@ def remap_sav_to_chr(srcsav, dstsheet):
 # or Floyd-Steinberg dithering, but it supports only web or adaptive
 # palette, not a specific palette.  quantize() supports a specific
 # palette, but Floyd-Steinberg dithering can't be turned off.
+# (Only later was it figured out how to go around this limited Python
+# API and call the C directly. See http://stackoverflow.com/a/29438149/2738262)
 # So I have to do all the conversion pixel by pixel, and it's slow
 # as [expletive] in pure Python.  Caching individual converted colors
 # speeds up the process for pictures that are already indexed or
@@ -613,6 +598,12 @@ def closestcolor(rgb, palette):
     return best
 
 def colorround(im, palettes):
+    """Quantize to color.
+
+im -- a Pillow image
+palettes -- a sequence of four sequences of four RGB tuples
+
+"""
     from collections import Counter
     from itertools import chain
     ensure_pil()
@@ -626,10 +617,10 @@ def colorround(im, palettes):
     for p in palettes:
         # Convert the image to this 4-color palette
         colordic = dict((rgb, closestcolor(rgb, p) + pbase) for rgb in imdset)
-        imm = array('B', (colordic[rgb]
-                          if rgb in colordic
-                          else closestcolor(rgb, p) + pbase
-                          for rgb in imd))
+        imm = bytearray(colordic[rgb]
+                        if rgb in colordic
+                        else closestcolor(rgb, p) + pbase
+                        for rgb in imd)
         imp = Image.new('P', im.size)
         imp.putpalette(outpal)
         imp.putdata(imm)
@@ -640,7 +631,7 @@ def colorround(im, palettes):
         impr = imp.convert('RGB')
         diff = ImageChops.difference(im, impr)
         difftiles = [diff.crop((l, t, l + 16, t + 16))
-                     for t in range(0, w, 16) for l in range(0, w, 16)]
+                     for t in range(0, h, 16) for l in range(0, w, 16)]
         difftiles = [list(tile.getdata()) for tile in difftiles]
         difftiles = [sum(3*r*r+6*g*g+b*b for (r, g, b) in tile)
                      for tile in difftiles]
@@ -667,9 +658,7 @@ def load_bitmap_with_palette(filename, palette):
     from chnutils import dedupe_chr
     im = Image.open(filename)
     (w, h) = im.size
-    palettes = [bisqpal[ord(i)]
-                for i in palette]
-    palettes  = [tuple(ord(i) for i in r) for r in palettes]
+    palettes = [tuple(bisqpal[i]) for i in palette]
     palettes = [[palettes[0]] + palettes[i + 1:i + 4]
                 for i in range(0, 16, 4)]
 
@@ -678,14 +667,16 @@ def load_bitmap_with_palette(filename, palette):
         i2.paste(im, ((256 - w) // 2, (240 - h) // 2))
         im = i2
     (imf, attrs) = colorround(im, palettes)
+    if len(attrs) % 2:
+        attrs.append([0] * len(attrs[0]))
     sav = bitmap_to_sav(imf)
     attrs = [[row[i] | (row[i + 1] << 2) for i in range(0, 16, 2)]
              for row in attrs]
-    attrs = [[tc | (bc << 4) for (tc, bc) in zip(t, b)]
+    attrs = [bytes(tc | (bc << 4) for (tc, bc) in zip(t, b))
              for (t, b) in zip(attrs[0::2], attrs[1::2])]
-    attrs = "".join(chr(c) for row in attrs for c in row)
-    return ''.join((sav[0:0x1BC0], attrs, sav[0x1C00:0x1F00],
-                    palette, palette, sav[0x1F20:]))
+    attrs = b''.join(attrs)
+    return b''.join((sav[0:0x1BC0], attrs, sav[0x1C00:0x1F00],
+                     palette, palette, sav[0x1F20:]))
 
 # Saving the NES palette that this converter uses ###################
 
@@ -694,16 +685,16 @@ def save_swatches(filename=None):
 
     cellw, cellh = 24, 24
     im = Image.new('P', (16*cellw, 5*cellh), 0x0F)
-    im.putpalette(''.join(bisqpal) + '\xff\x00\xff'*192)
+    im.putpalette(b''.join(bisqpal) + b'\xff\x00\xff'*192)
     fnt = ImageFont.load_default()
     dc = ImageDraw.Draw(im)
     captiontxt = "savtool's NES palette"
     tw, th = dc.textsize(captiontxt, font=fnt)
     captionpos = ((cellw * 16 - tw) // 2, (cellh - th) // 2)
     dc.text(captionpos, captiontxt, font=fnt, fill=0x20)
-    for row in xrange(4):
+    for row in range(4):
         y = (row + 1) * cellh
-        for col in xrange(16):
+        for col in range(16):
             x = col * cellw
             colornumber = row * 16 + col
             dc.rectangle((x, y, x + cellw, y + cellh), fill=colornumber)
@@ -749,7 +740,7 @@ def main(argv=None):
     m = palette and xdigitRE.match(palette)
     if m and len(m.group(1)) == 32:
         paltype = 'literal'
-        palette = a2b_hex(m.group(1))
+        palette = bytes.fromhex(m.group(1))
     else:
         paltype = palette and infile_exts[os.path.splitext(palette)[1].lstrip('.').lower()]
 
@@ -784,7 +775,7 @@ def main(argv=None):
 
     changed = False
     if paltype == 'literal':
-        sav = ''.join((sav[:0x1F00], palette, sav[0x1F10:]))
+        sav = b''.join((sav[:0x1F00], palette, sav[0x1F10:]))
         changed = True
 
     chrdata = None
@@ -825,7 +816,7 @@ def main(argv=None):
     if show:
         im.show()
     if printpalette:
-        print(b2a_hex(sav[0x1F00:0x1F10]))
+        print(''.join('%02x' % b for b in sav[0x1F00:0x1F10]))
 
     # TO DO:
     # Convert color PNG and guess palette
@@ -833,10 +824,10 @@ def main(argv=None):
 def test_suite():
     test_argv()
     main(["savtool.py", "../docs/smb1.ppu", "--chr", "1000", "--show"])
-    raw_input("Viewing SMB1 PPU dump")
+    input("Viewing SMB1 PPU dump")
     main(["savtool.py", "../docs/smb1.ppu", "--chr", "1000", "smb1.ppu.png"])
     main(["savtool.py", "../docs/smb1.ppu", "--chr", "1000", "--write-chr", "1", "--show"])
-    raw_input("Viewing SMB1 CHR ROM")
+    input("Viewing SMB1 CHR ROM")
     main(["savtool.py", "../sample_savs/pm.sav", "test_chr.bmp", "--write-chr", "1"])
     main(["savtool.py", "../sample_savs/pm.sav", "test_out.png"])
     main(["savtool.py", "../sample_savs/pm.sav", "--print-palette", 'pm.sav.png'])
@@ -848,22 +839,22 @@ def test_suite():
     main(["savtool.py", "../sample_savs/pm.sav", "pm.sav.nam"])
     main(["savtool.py", "../sample_savs/pm.sav", "pm.sav.chr"])
     main(["savtool.py", "pm.sav.nam", "--chr", "pm.sav.chr", "--palette", "0f0026300f1726300f2726300f152630", "--show"])
-    raw_input("Viewing PM reassembled from CHR and NAM with literal palette")
+    input("Viewing PM reassembled from CHR and NAM with literal palette")
     main(["savtool.py", "pm.sav.nam", "--chr", "pm.sav.chr", "--palette", "../sample_savs/pm.sav", "--show"])
-    raw_input("Viewing PM reassembled from CHR and NAM with palette from SAV")
+    input("Viewing PM reassembled from CHR and NAM with palette from SAV")
     main(["savtool.py", "../sample_savs/pm.sav", '--write-chr', '0', "pm.chr.png"])
     main(["savtool.py", "pm.sav.nam", "--chr", "pm.chr.png", "--palette", "0f0026300f1726300f2726300f152630", "pm_reassembled.sav"])
     main(["savtool.py", "pm_reassembled.sav", "--show"])
-    raw_input("Viewing the same, except as a SAV")
+    input("Viewing the same, except as a SAV")
     main(["savtool.py", "../sample_savs/RPG_village.sav", "--remap", "--chr", "../sample_savs/prez.sav", "RPG_village_with_prez_chr.sav"])
     main(["savtool.py", "RPG_village_with_prez_chr.sav", "--show"])
-    raw_input("Viewing RPG village remapped into prez tile sheet")
+    input("Viewing RPG village remapped into prez tile sheet")
     main(["savtool.py", "RPG_village_with_prez_chr.sav", "--write-chr", "0", "--show"])
-    raw_input("Viewing prez tile sheet that has had RPG village tiles inserted")
+    input("Viewing prez tile sheet that has had RPG village tiles inserted")
     main(["savtool.py", "../sample_savs/RPG_village.sav", "RPG_village.png"])
     main(["savtool.py", "RPG_village.png", "--palette", "0f1219270f1019170f1623270f021222", "--show"])
-    raw_input("Viewing RPG_village converted to PNG and back with a palette")
-    print*("""Copy the sav files from this folder to a PowerPak and make sure they
+    input("Viewing RPG_village converted to PNG and back with a palette")
+    print("""Copy the sav files from this folder to a PowerPak and make sure they
 look correct.""")
 
 if __name__=='__main__':

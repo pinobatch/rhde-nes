@@ -1,10 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import with_statement, print_function, division
 import sys, array
 from PIL import Image, ImageDraw
 from pilbmp2nes import pilbmp2chr
 import pb53
 from binascii import b2a_hex
+
+try:
+    xrange
+except NameError:
+    xrange = range
 
 vis = False
 
@@ -24,13 +29,14 @@ def main(argv=None):
     for line in lines:
         coord = [x.strip() for x in line.split(',')]
         if len(coord) != 2 or not all(x.isdigit() for x in coord):
-            print("%s is not coords" % line)
+            print("%s is not coords" % line, sys.stderr)
             continue
         coords.append(tuple(int(x) for x in coord))
 
     im = Image.open(imname)
     if im.mode != 'P':
-        print("wrong mode! Use indexed, not RGB or grayscale")
+        print("mkspritemap.py: %s must be indexed" % imname,
+              file=sys.stderr))
         sys.exit(1)
 
     overdraw = [0]*im.size[1]
