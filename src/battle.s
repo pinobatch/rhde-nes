@@ -7,8 +7,8 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
-.include "ram.h"
+.include "nes.inc"
+.include "global.inc"
 
 MAX_UNIT_HP = 3
 BATRADIUS = 2

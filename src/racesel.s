@@ -7,9 +7,9 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
-.include "ram.h"
-.include "mbyt.h"
+.include "nes.inc"
+.include "global.inc"
+.include "mbyt.inc"
 .segment "CODE"
 
 .proc load_racesel_tiles

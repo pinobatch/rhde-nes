@@ -52,15 +52,25 @@ CFLAGS = -std=gnu99 -Wall -DNDEBUG -O
 # not.  COMSPEC will be set to the name of the shell on Windows and
 # not defined on UNIX.
 ifdef COMSPEC
-DOTEXE=.exe
+DOTEXE:=.exe
+EMU := start ""
+DEBUGEMU := start ""
+PY := py -3
 else
-DOTEXE=
+DOTEXE:=
+EMU := fceux
+DEBUGEMU :=  ~/.wine/drive_c/Program\ Files\ \(x86\)/FCEUX/fceux.exe
+PY := python3
 endif
 
-.PHONY: run dist zip clean
+.PHONY: run dist zip clean all debug
 
 run: $(title).nes
 	$(EMU) $<
+debug: $(title).nes
+	$(DEBUGEMU) $<
+
+all: $(title).nes
 
 clean:
 	-rm $(objdir)/*.o $(objdir)/*.chr $(objdir)/*.ov53 $(objdir)/*.sav $(objdir)/*.pb53 $(objdir)/*.s
@@ -77,6 +87,12 @@ zip: $(title)-$(version).zip
 $(title)-$(version).zip: zip.in $(title).nes README.html CHANGES.txt $(objdir)/index.txt
 	zip -9 -u $@ -@ < $<
 
+# Build zip.in from the list of files in the Git tree
+zip.in:
+	git ls-files | grep -e "^[^.]" > $@
+	echo $(title).nes >> $@
+	echo zip.in >> $@
+
 $(objdir)/index.txt: makefile
 	echo Files produced by build tools go here, but caulk goes where? > $@
 
@@ -84,10 +100,10 @@ $(objdir)/index.txt: makefile
 
 objlistntsc = $(foreach o,$(objlist),$(objdir)/$(o).o)
 
-map.txt $(title).nes: nes.ini $(objlistntsc)
+map.txt $(title).nes: nrom256.cfg $(objlistntsc)
 	$(LD65) -o $(title).nes -C $^ -m map.txt
 
-$(objdir)/%.o: $(srcdir)/%.s $(srcdir)/nes.h $(srcdir)/ram.h $(srcdir)/mbyt.h
+$(objdir)/%.o: $(srcdir)/%.s $(srcdir)/nes.inc $(srcdir)/global.inc $(srcdir)/mbyt.inc
 	$(AS65) $(CFLAGS65) $< -o $@
 
 $(objdir)/%.o: $(objdir)/%.s
@@ -111,46 +127,46 @@ $(objdir)/shopping.o: $(objdir)/menu_furni.pb53
 # Generate lookup tables
 
 $(objdir)/ntscPeriods.s: tools/mktables.py
-	$< period $@
+	$(PY) $< period $@
 
 # Rules for graphics data conversion
 
 $(objdir)/menu_furni.pb53: $(objdir)/menu_furni16.chr
-	tools/pb53.py --block-size=4 --no-prev $< $@
+	$(PY) tools/pb53.py --block-size=4 --no-prev $< $@
 
 $(objdir)/%.pb53: $(objdir)/%
-	tools/pb53.py --raw $< $@
+	$(PY) tools/pb53.py --raw $< $@
 
 $(objdir)/%.chr: $(imgdir)/%.png
-	tools/pilbmp2nes.py $< $@
+	$(PY) tools/pilbmp2nes.py $< $@
 
 $(objdir)/%16.chr: $(imgdir)/%.png
-	tools/pilbmp2nes.py -H 16 $< $@
+	$(PY) tools/pilbmp2nes.py -H 16 $< $@
 
 $(objdir)/rsel.sav: $(imgdir)/racesel_screen.png
-	tools/savtool.py --palette=0f1637060f381A320f0f0f0f0f0f0f0f $< $@
+	$(PY) tools/savtool.py --palette=0f1637060f381A320f0f0f0f0f0f0f0f $< $@
 
 $(objdir)/title1.sav: $(imgdir)/rhdescene_thiefonly_locolor.png
-	tools/savtool.py --palette=0f1016290f1011290f1027290f101722 $< $@
+	$(PY) tools/savtool.py --palette=0f1016290f1011290f1027290f101722 $< $@
 
 $(objdir)/%.nam: $(objdir)/%.sav
-	tools/savtool.py $< $@
+	$(PY) tools/savtool.py $< $@
 
 $(objdir)/%.chr: $(objdir)/%.sav
-	tools/savtool.py $< $@
+	$(PY) tools/savtool.py $< $@
 
 $(objdir)/%.pb53: $(objdir)/%
-	tools/pb53.py --raw $< $@
+	$(PY) tools/pb53.py --raw $< $@
 
 $(objdir)/%.s: tools/vwfbuild.py tilesets/%.png
-	$^ $@
+	$(PY) $^ $@
 
 # Currently unused
 
 $(objdir)/title2.sav: $(imgdir)/titlewordmark.png
-	tools/savtool.py --palette=0f1016290f1012290f0016290f161229 $< $@
+	$(PY) tools/savtool.py --palette=0f1016290f1012290f0016290f161229 $< $@
 
 $(objdir)/titlescreensprites.ov53: tools/mkspritemap.py \
 $(srcdir)/titlescreensprites.in $(imgdir)/titlespritelayer.png
-	$^ $@
+	$(PY) $^ $@
 

@@ -7,9 +7,9 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
-.include "ram.h"
-.include "mbyt.h"
+.include "nes.inc"
+.include "global.inc"
+.include "mbyt.inc"
 
 FURNISH_PHASE_DURATION = 30
 
@@ -483,7 +483,7 @@ allitems_end:
 
 ;.out .sprintf("rug is #%03d", item_rug)
 
-.assert (shopitems_end - shopitems) / 16 = NUM_FURNIS, error, .sprintf("NUM_FURNIS is incorrect; change it to %d in ram.h", (shopitems_end - shopitems) / 16)
+.assert (shopitems_end - shopitems) / 16 = NUM_FURNIS, error, .sprintf("NUM_FURNIS is incorrect; change it to %d in global.inc", (shopitems_end - shopitems) / 16)
 .assert (allitems_end - shopitems) < 16*32, error, "WAY too many furnis"
 NUM_ALL_FURNIS = <((allitems_end - shopitems) / 16)
 

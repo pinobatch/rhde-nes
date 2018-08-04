@@ -7,6 +7,7 @@
 /obj/nes/*.pb53
 /obj/nes/*.ov53
 /zip.in
+rhde.nes
 *.nes.deb
 /map.txt
 /nsfmap.txt

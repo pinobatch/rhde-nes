@@ -14,7 +14,7 @@
 ; 2012-01: DY added support for inverse video
 ; 2014-04: DY fixed some slight glitches in shift111 OR logic
 
-.include "nes.h"
+.include "nes.inc"
 .export vwfPutTile, vwfPuts, vwfPuts0
 .export vwfGlyphWidth, vwfStrWidth, vwfStrWidth0
 .export clearLineImg, copyLineImg, lineImgBuf, invertTiles

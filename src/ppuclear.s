@@ -7,7 +7,7 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
+.include "nes.inc"
 .export ppu_zero_nt, ppu_clear_nt, ppu_clear_oam, ppu_screen_on
 .import OAM
 
@@ -77,7 +77,7 @@ loop:
 ;;
 ; Sets the scroll position and turns PPU rendering on.
 ; @param A value for PPUCTRL ($2000) including scroll position
-; MSBs; see nes.h
+; MSBs; see nes.inc
 ; @param X horizontal scroll position (0-255)
 ; @param Y vertical scroll position (0-239)
 ; @param C if true, sprites will be visible

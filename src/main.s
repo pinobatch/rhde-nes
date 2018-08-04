@@ -15,9 +15,9 @@
 ; get "No such file or directory" here, you need newer ca65,
 ; or you need to add src to the include path in the makefile.
 ; The change appears not to have affected .incbin though.
-.include "nes.h"
-.include "ram.h"
-.include "mbyt.h"
+.include "nes.inc"
+.include "global.inc"
+.include "mbyt.inc"
 
 .export psg_sfx_state
 .export INITIAL_CASH:absolute

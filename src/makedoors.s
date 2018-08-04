@@ -7,8 +7,8 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
-.include "ram.h"
+.include "nes.inc"
+.include "global.inc"
 
 DOORS_PHASE_DURATION = 10
 MAX_BREAKDOORS = 16  ; number of doors whose damage is tracked

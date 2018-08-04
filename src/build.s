@@ -7,8 +7,8 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
-.include "ram.h"
+.include "nes.inc"
+.include "global.inc"
 
 .segment "ZEROPAGE"
 cur_piece_lo: .res 2

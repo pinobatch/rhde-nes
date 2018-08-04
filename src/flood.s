@@ -16,8 +16,8 @@
 ; https://en.wikipedia.org/wiki/SWAR
 ;
 
-.include "nes.h"
-.include "ram.h"
+.include "nes.inc"
+.include "global.inc"
 
 INCLUDE_DUMP_WALL = 1
 

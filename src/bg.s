@@ -8,9 +8,9 @@
 ; code copies.  This file is offered as-is, without any warranty.
 ;
 
-.include "nes.h"
-.include "ram.h"
-.include "mbyt.h"
+.include "nes.inc"
+.include "global.inc"
+.include "mbyt.inc"
 .p02
 
 .import INITIAL_CASH

@@ -1,6 +1,6 @@
-.include "nes.h"
-.include "ram.h"
-.include "mbyt.h"
+.include "nes.inc"
+.include "global.inc"
+.include "mbyt.inc"
 
 ; Uncomment to play music during the help screen.  Useful for
 ; testing a transcription that you just added to musicseq.s.

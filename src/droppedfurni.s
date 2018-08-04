@@ -1,5 +1,5 @@
-.include "nes.h"
-.include "ram.h"
+.include "nes.inc"
+.include "global.inc"
 
 .segment "BSS"
 dropped_furni_x: .res MAX_DROPPED_FURNI

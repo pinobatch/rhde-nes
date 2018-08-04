@@ -7,8 +7,8 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "nes.h"
-.include "ram.h"
+.include "nes.inc"
+.include "global.inc"
 
 MAX_CANNONS = 12  ; Outdoor fixed projectile launching platforms ("silo")
 MAX_ROCKETS = 8   ; Projectiles fired from "cannons"

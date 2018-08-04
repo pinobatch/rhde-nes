@@ -7,7 +7,7 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.include "ram.h"
+.include "global.inc"
 
 .segment "ZEROPAGE"
 connect_progress: .res 1
