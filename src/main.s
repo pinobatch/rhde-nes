@@ -1,6 +1,6 @@
 ;
 ; Rampart style game for NES
-; Copyright 2014 Damian Yerrick
+; Copyright 2014-2018 Damian Yerrick
 ;
 ; Copying and distribution of this file, with or without
 ; modification, are permitted in any medium without royalty provided
@@ -153,7 +153,9 @@ vwait2:
   jsr load_main_palette
   jsr load_main_chr
   jsr init_playfield
-  lda nmis
+
+  ; Make the road using bits 0-3 of elapsed frames as a random seed
+  lda nmis  ; Bits 0-3
   and #$03
   jsr make_road
   jsr place_initial_houses
@@ -167,25 +169,26 @@ vwait2:
   stx rounds_so_far
   stx copy_region_left
   stx enclose_play_sfx
+  jsr ppu_clear_oam
 
-  ; Draw the initial background
+  ; Clear both nametables.  Primary is $20; secondary is $2C
+  ; whose vast majority is offscreen.
   lda #VBLANK_NMI
   sta PPUCTRL
-  ; X is still 0
-  jsr ppu_clear_oam
-  ldx #$2C  ; second nametable; vast majority is offscreen
   lda #TILE_BLACK
   ldy #$00
   sty PPUMASK
+  ldx #$2C
   jsr ppu_clear_nt
-  ldx #$20  ; primary nametable
-  lda #TILE_BLACK
-  ldy #$00
+  ldx #$20
   jsr ppu_clear_nt
+
+  ; Draw the initial background
   jsr make_road_border
   lda #30
   sta copy_region_width
-forever:
+
+next_round:
 
   ; Remove tips of walls
   lda #DIRTY_RM_ENDS
@@ -378,7 +381,7 @@ not_won_yet:
 
   jsr build_phase
   inc rounds_so_far
-  jmp forever
+  jmp next_round
 .endproc
 
 .proc game_won
