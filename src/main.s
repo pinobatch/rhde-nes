@@ -599,7 +599,7 @@ do1dig:
 do1race:
   lda race_sprites_hi,x
   ldy race_sprites_lo,x
-  ldx #128*24/512
+  ldx #128*24/256
 .endproc
 ;;
 ; Decompresses Donut data to the current position in CHR RAM.
