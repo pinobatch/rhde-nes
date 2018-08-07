@@ -36,8 +36,6 @@ donut_block_count = temp+4
 
 .segment "CODE"
 
-.align 256
-
 .proc donut_decompress_block
 block_header    = temp+0
 plane_def       = temp+1
