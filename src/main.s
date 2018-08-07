@@ -599,7 +599,7 @@ do1dig:
 do1race:
   lda race_sprites_hi,x
   ldy race_sprites_lo,x
-  ldx #128*24/512
+  ldx #128*24/256
 .endproc
 ;;
 ; Decompresses Donut data to the current position in CHR RAM.
@@ -612,7 +612,8 @@ block_count = $04  ; matches variable donut_block_count
   sta ciSrc+1
   sty ciSrc
   stx block_count
-  eightmoretiles:
+  fourmoretiles:
+    sta $4444
     jsr donut_decompress_block
     ldx #0
     copyloop:
@@ -622,7 +623,7 @@ block_count = $04  ; matches variable donut_block_count
       cpx #64
     bcc copyloop
     lda block_count
-  bne eightmoretiles
+  bne fourmoretiles
 rts
 .endproc
 
