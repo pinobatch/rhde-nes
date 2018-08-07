@@ -25,8 +25,8 @@ NUM_PAGES = 5
   sta PPUADDR
   lda #>title1_chr_pb53
   ldy #<title1_chr_pb53
-  ldx #(128*128 + 64*8)/512
-  jsr load_pb53_blk
+  ldx #(128*128 + 64*8)/256
+  jsr load_blk_chr
 
   ; Draw the nametable
   lda #$20
@@ -35,8 +35,8 @@ NUM_PAGES = 5
   sta PPUADDR
   lda #>title1_nam_pb53
   ldy #<title1_nam_pb53
-  ldx #1024/128
-  jsr load_pb53_blk
+  ldx #1024/64
+  jsr load_blk_chr
   ldx #$24
   jsr ppu_zero_nt
 
@@ -352,8 +352,8 @@ palloop:
   sta PPUADDR
   lda #>titleguy_pb53
   ldy #<titleguy_pb53
-  ldx #64*80/512
-  jsr load_pb53_blk
+  ldx #64*80/256
+  jsr load_blk_chr
   lda #$20
   sta 1
   lda #$E3
@@ -575,7 +575,7 @@ titleguy_palette:
   mbyt "20FF3716 FF161616 FFFF20FF FF20FFFF"
 titleguy_pb53:
   ; 64x80 pixel character
-  .incbin "obj/nes/titleguy.chr.pb53"
+  .incbin "obj/nes/titleguy.chr.donut"
 uctions_pages:
   .addr uctions1_txt, uctions2_txt, uctions3_txt, uctions4_txt, uctions5_txt
 uctions1_txt:
@@ -599,10 +599,10 @@ uctions5_txt:
   .byte 0
 
 title1_chr_pb53:
-  .incbin "obj/nes/title1.chr.pb53"
-  .incbin "obj/nes/title_cursor_sprites.chr.pb53"
+  .incbin "obj/nes/title1.chr.donut"
+  .incbin "obj/nes/title_cursor_sprites.chr.donut"
 title1_nam_pb53:
-  .incbin "obj/nes/title1.nam.pb53"
+  .incbin "obj/nes/title1.nam.donut"
 titlepal=*-1
   mbyt "   101629 ff101229 ff103729 ff101722 ff101629"
 title_pushstart_msg:

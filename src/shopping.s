@@ -718,34 +718,105 @@ shopparticle_x:
 ; A: item id (0-15 or so)
 ; X: offset (0 or 64)
 .proc load_menu_furni
-  ldy #<menu_furni_imgdata
-  sty ciSrc
-  ldy #>menu_furni_imgdata
-  sty ciSrc+1
   asl a
-  beq not_img0
-  cmp #2 * NUM_FURNIS
+  cmp #NUM_FURNIS*2
   bcc :+
-  rts
-:
-  
-  ; There's a table of segment offsets at the start of menu_furni,
-  ; with each entry big-endian
+    rts
+  :
+; There's a table of block offsets at the start of menu_furni,
+; with each entry big-endian
   tay
-  lda menu_furni+1,y
   clc
-  adc ciSrc
+  lda menu_furni+1,y
+  adc #<menu_furni
   sta ciSrc
   lda menu_furni+0,y
-  adc ciSrc+1
+  adc #>menu_furni
   sta ciSrc+1
-not_img0:
-  stx ciBufStart
-  txa
-  clc
-  adc #64
-  sta ciBufEnd
-  jmp unpb53_some
+un_menu_furni:
+; Donut copies and xor many buffers, even if they consist of all 0x00 bytes.
+; Here we use a specialy crafted subset that interprets only one block type,
+; and writes only once (sometimes twice) to the output buffer.
+;
+; Assume all blocks are of type '-L-i-C--' in Donut debug notaion.
+; (Based on the satistical average of Donut block types for menu_furni16.chr)
+;
+; That means predict first plane by 0xff and second plane by 0x00,
+; xor the decoded second plane onto the first, don't xor on any
+; previous buffer, and have a header byte that signifies
+; which of the 8 planes are just 8 bytes of 0xff/0x00.
+;
+; For code simplicity, pb8 planes are *not* encoded upside-down
+plane_def = $00
+loop_counter = $01
+pb8_ctrl = $02
+  ldy #$00
+  lda (ciSrc), y
+    ; Reading a byte from the stream pointer will be pre-increment
+    ; So save last increment until routine is done
+  sta plane_def
+
+  lda #$100-8
+  sta loop_counter
+    ; counter is negative so that we can use the
+    ; high bits to easily set the V flag.
+  plane_loop:
+    ; read a bit to determine if next plane is all 0x00/0xff
+    lda #$00
+    asl plane_def
+    bcc pb8_is_all_zero
+      iny
+      lda (ciSrc), y
+      bit loop_counter  ; set V
+    pb8_is_all_zero:
+    ; if plane is all zero, leave V cleared so that
+    ; we don't waste time xoring 8 zeros
+    sta pb8_ctrl
+
+    ; set the top value of pb8 to either 0x00 or 0xff
+    ; planes 0,2,4,6 = 0xff, planes 1,3,5,7 = 0x00
+    lda loop_counter
+    and #$01
+    bne not_even_plane
+      ;,; lda #$01
+      lda #$fe  ; xor with 0x01 equals 0xff
+      clv       ; first planes don't xor with any plane
+    not_even_plane:
+    eor #$01
+
+    ; prime the pb8 loop a begin writing to the output buffer
+    sec
+    rol pb8_ctrl
+    pb8_loop:
+      ; at this point:
+      ; A: previous byte in this plane
+      ; C = 0: repeat previous byte
+      ; C = 1: read new byte from bitstream
+      bcc pb8_use_prev
+        iny
+        lda (ciSrc), y
+      pb8_use_prev:
+      sta PB53_outbuf, x
+      bvc skip_writing_to_previous_plane
+        eor a:PB53_outbuf-8, x
+        sta a:PB53_outbuf-8, x
+        lda PB53_outbuf, x
+      skip_writing_to_previous_plane:
+      inx
+      asl pb8_ctrl
+    bne pb8_loop
+    inc loop_counter
+  bne plane_loop
+  ; add accumulated pointer offset
+  sec  ;,; iny   clc
+  tya
+  adc ciSrc
+  sta ciSrc
+  bcc :+
+    inc ciSrc+1
+  :
+  rts
+rts
 .endproc
 
 ;;
@@ -918,8 +989,7 @@ done:
 
 .segment "RODATA"
 menu_furni:
-  .incbin "obj/nes/menu_furni.pb53"
-menu_furni_imgdata = menu_furni + 36
+  .incbin "obj/nes/menu_furni.minid"
 
 shop_nt:
   mbyt "B8B9BABBB4B5B6B70F0F"

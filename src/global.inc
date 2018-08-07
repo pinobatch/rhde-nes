@@ -85,7 +85,7 @@ TILE_HPMARKER = $3C
 .globalzp time_subtenths, time_tenths, time_seconds, phase_seconds
 .globalzp cash_lo, cash_hi, player_race, debughex, hra_wins
 .global update_game_time, countdown_logic, delay_500, delay_y_seconds
-.global load_pb53_blk, draw_debughex
+.global load_blk_chr, draw_debughex
 
 ; pads.s
 .global read_pads, autorepeat
@@ -232,7 +232,11 @@ MAX_DROPPED_FURNI = 8
 
 ; unpb53.s
 .importzp ciSrc, ciDst, ciBufStart, ciBufEnd
-.import unpb53_some, PB53_outbuf
+.import PB53_outbuf
+;.import unpb53_some
+
+; donut.s
+.import donut_decompress_block
 
 ; math.s
 .import getAngle

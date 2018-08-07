@@ -5,6 +5,8 @@
 /obj/nes/*.s
 /obj/nes/*.sav
 /obj/nes/*.pb53
+/obj/nes/*.donut
+/obj/nes/*.minid
 /obj/nes/*.ov53
 /zip.in
 rhde.nes

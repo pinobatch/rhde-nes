@@ -7,8 +7,9 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 ;
-.export unpb53_some, PB53_outbuf
+.export PB53_outbuf
 .exportzp ciSrc, ciDst, ciBufStart, ciBufEnd
+;.export unpb53_some
 
 .segment "ZEROPAGE"
 ciSrc: .res 2
@@ -16,6 +17,9 @@ ciDst: .res 2
 ciBufStart: .res 1
 ciBufEnd: .res 1
 PB53_outbuf = $0100
+
+; all code commeted out, we just need the ZEROPAGE defs
+.if 0
 
 ; the decompressor is less than 176 bytes, useful for loading into
 ; RAM with a trampoline
@@ -151,3 +155,4 @@ noNewByte:
   rts
 .endproc
 
+.endif

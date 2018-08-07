@@ -21,24 +21,24 @@
   sta PPUADDR
   lda #>rsel_chr_pb53
   ldy #<rsel_chr_pb53
-  ldx #144/8
-  jsr load_pb53_blk
+  ldx #144/4
+  jsr load_blk_chr
   lda #$20
   sta PPUADDR
   lda #$00
   sta PPUADDR
   lda #>rsel_nam_pb53
   ldy #<rsel_nam_pb53
-  ldx #1024/128
-  jsr load_pb53_blk
+  ldx #1024/64
+  jsr load_blk_chr
   lda #$10
   sta PPUADDR
   lda #$00
   sta PPUADDR
   lda #>rsel_sprites_pb53
   ldy #<rsel_sprites_pb53
-  ldx #64*16/512
-  jsr load_pb53_blk
+  ldx #64*16/256
+  jsr load_blk_chr
   lda #$3F
   ldx #$01
   sta PPUADDR
@@ -241,14 +241,14 @@ player_loop:
 
 .segment "RODATA"
 rsel_chr_pb53:
-  .incbin "obj/nes/rsel.chr.pb53"
+  .incbin "obj/nes/rsel.chr.donut"
 rsel_nam_pb53:
-  .incbin "obj/nes/rsel.nam.pb53"
+  .incbin "obj/nes/rsel.nam.donut"
 rsel_pal:
   .incbin "obj/nes/rsel.sav", $1F00, 16
   mbyt "FFFF1620 FFFF1220 FFFFFFFF FFFFFFFF"
 rsel_sprites_pb53:
-  .incbin "obj/nes/racesel_sprites.chr.pb53"
+  .incbin "obj/nes/racesel_sprites.chr.donut"
 
 racesel_title: .byte "[ Select Race ]", 0
 race_name0: .byte "Nander",0

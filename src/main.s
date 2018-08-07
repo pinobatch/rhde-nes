@@ -568,24 +568,24 @@ do1dig:
   sta PPUADDR
   lda #>bggfx_pb53
   ldy #<bggfx_pb53
-  ldx #128*BGGFX_HT/512
-  jsr load_pb53_blk
+  ldx #128*BGGFX_HT/256
+  jsr load_blk_chr
   lda #$10
   sta PPUADDR
   lda #$00
   sta PPUADDR
   lda #>spritegfx_pb53
   ldy #<spritegfx_pb53
-  ldx #128*SPRITEGFX_HT/512
-  jsr load_pb53_blk
+  ldx #128*SPRITEGFX_HT/256
+  jsr load_blk_chr
   lda #$15
   sta PPUADDR
   lda #$00
   sta PPUADDR
   lda #>furni_sprites_pb53
   ldy #<furni_sprites_pb53
-  ldx #128*24/512
-  jsr load_pb53_blk
+  ldx #128*24/256
+  jsr load_blk_chr
 
   ; sprites A0-CF: player 1 tiles
   ; sprites D0-FF: player 2 tiles
@@ -602,30 +602,28 @@ do1race:
   ldx #128*24/512
 .endproc
 ;;
-; Decompresses PB53 data to the current position in CHR RAM.
-; @param A high byte of pb53 address
-; @param Y low byte of pb53 address
-; @param X size of decompressed data in units of 128 bytes,
-; 8 tiles, or 512 pixels
-.proc load_pb53_blk
+; Decompresses Donut data to the current position in CHR RAM.
+; @param A high byte of Donut address
+; @param Y low byte of Donut address
+; @param X size of decompressed data in units of 64 bytes,
+; 4 tiles, or 256 pixels
+.proc load_blk_chr
+block_count = $04  ; matches variable donut_block_count
   sta ciSrc+1
   sty ciSrc
-  stx oam_used
-eightmoretiles:
-  lda #$80
-  sta ciBufEnd
-  asl a
-  sta ciBufStart
-  jsr unpb53_some
-  ldx #0
-copyloop:
-  lda PB53_outbuf,x
-  sta PPUDATA
-  inx
-  bpl copyloop
-  dec oam_used
+  stx block_count
+  eightmoretiles:
+    jsr donut_decompress_block
+    ldx #0
+    copyloop:
+      lda PB53_outbuf,x
+      sta PPUDATA
+      inx
+      cpx #64
+    bcc copyloop
+    lda block_count
   bne eightmoretiles
-  rts
+rts
 .endproc
 
 .proc load_main_palette
@@ -669,17 +667,17 @@ BGGFX_HT = 64
 SPRITEGFX_HT = 32
 
 bggfx_pb53:
-  .incbin "obj/nes/bggfx.chr.pb53"
+  .incbin "obj/nes/bggfx.chr.donut"
 spritegfx_pb53:
-  .incbin "obj/nes/spritegfx.chr.pb53"
+  .incbin "obj/nes/spritegfx.chr.donut"
 furni_sprites_pb53:
-  .incbin "obj/nes/furni_sprites.chr.pb53"
+  .incbin "obj/nes/furni_sprites.chr.donut"
 nander_sprites_pb53:
-  .incbin "obj/nes/nander_sprites.chr.pb53"
+  .incbin "obj/nes/nander_sprites.chr.donut"
 poli_sprites_pb53:
-  .incbin "obj/nes/poli_sprites.chr.pb53"
+  .incbin "obj/nes/poli_sprites.chr.donut"
 volci_sprites_pb53:
-  .incbin "obj/nes/volci_sprites.chr.pb53"
+  .incbin "obj/nes/volci_sprites.chr.donut"
 race_sprites_lo:
   .lobytes nander_sprites_pb53, poli_sprites_pb53, volci_sprites_pb53
 race_sprites_hi:
