@@ -613,7 +613,7 @@ block_count = $04  ; matches variable donut_block_count
   sty ciSrc
   stx block_count
   fourmoretiles:
-    sta $4444
+    ldx #0
     jsr donut_decompress_block
     ldx #0
     copyloop:
