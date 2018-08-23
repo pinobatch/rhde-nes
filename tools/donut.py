@@ -328,6 +328,7 @@ def main(argv=None):
     parser.add_argument('--no-bit-flip', help="don't encode plane flipping", action="store_true")
     #parser.add_argument('--no-page-interleave', help="don't interleave pages when [de]compressing", action="store_true")
     #parser.add_argument('--add-seek-points', metavar='BLOCKS_PER_PAGE', help='disable interleaving and begin with a list of byte offsets to pages')
+    parser.add_argument('--add-block-seekpoints', help="prepend a list of seek points foe each block", action="store_true")
     options = parser.parse_args(argv)
 
     if not options.output and len(options.input) > 1:
@@ -352,6 +353,11 @@ def main(argv=None):
             with FileIterContextHack(fn, 'rb') as input_file:
                 progress = ProgressBar(input_file.file_name, len(input_file), time.time(), screen_width)
                 if options.decompress:
+                    if options.add_block_seekpoints:
+                        # read header length and skip it.
+                        header_size = next(input_file) * 256 + next(input_file) - 2
+                        for i in range(header_size):
+                            next(input_file)
                     page = []
                     prev_block = None
                     for block in (uncompress_block(input_file, prev_block) for _ in iter(int, 1)):
@@ -383,8 +389,15 @@ def main(argv=None):
                             if not options.quiet:
                                 if progress.update(time.time(), input_file.bytes_transfered):
                                     print(progress, end='\r', file=sys.stderr)
-                            if not options.no_prev:
+                            if not options.no_prev and not options.add_block_seekpoints:
                                 prev_block = block
+                        if options.add_block_seekpoints:
+                            header_size = len(cpage) * 2
+                            block_offsets = list(itertools.accumulate(len(i) for i in cpage))
+                            seekpoints = [header_size] + list((i+header_size) % 0x10000 for i in block_offsets[0:-1])
+                            header = b"".join(bytes([(sz >> 8) & 0xFF, sz & 0xFF])
+                              for sz in seekpoints)
+                            output_file.write(header)
                         output_file.write(b''.join(cpage))
 
                 if not options.quiet:

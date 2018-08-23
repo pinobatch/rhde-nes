@@ -73,7 +73,7 @@ debug: $(title).nes
 all: $(title).nes
 
 clean:
-	-rm $(objdir)/*.o $(objdir)/*.chr $(objdir)/*.ov53 $(objdir)/*.sav $(objdir)/*.pb53 $(objdir)/*.donut $(objdir)/*.minid $(objdir)/*.s
+	-rm $(objdir)/*.o $(objdir)/*.chr $(objdir)/*.ov53 $(objdir)/*.sav $(objdir)/*.pb53 $(objdir)/*.donut $(objdir)/*.s
 
 # Rule to create or update the distribution zipfile by adding all
 # files listed in zip.in.  Actually the zipfile depends on every
@@ -122,7 +122,7 @@ $(objdir)/title.o: \
 $(objdir)/racesel.o: \
   $(objdir)/rsel.nam.donut $(objdir)/rsel.chr.donut \
   $(objdir)/racesel_sprites.chr.donut
-$(objdir)/shopping.o: $(objdir)/menu_furni.minid
+$(objdir)/shopping.o: $(objdir)/menu_furni.donut
 
 # Generate lookup tables
 
@@ -134,8 +134,8 @@ $(objdir)/ntscPeriods.s: tools/mktables.py
 $(objdir)/menu_furni.pb53: $(objdir)/menu_furni16.chr
 	$(PY) tools/pb53.py --block-size=4 --no-prev $< $@
 
-$(objdir)/menu_furni.minid: $(objdir)/menu_furni16.chr
-	$(PY) tools/menu_furni_compress.py $< $@
+$(objdir)/menu_furni.donut: $(objdir)/menu_furni16.chr
+	$(PY) tools/donut.py -f --no-bit-flip --no-prev --add-block-seekpoints $< $@
 
 $(objdir)/%.donut: $(objdir)/%
 	$(PY) tools/donut.py -f $< $@
