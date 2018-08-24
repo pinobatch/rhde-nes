@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 #
 # Makefile for NES game
-# Copyright 2011 Damian Yerrick
+# Copyright 2011-2018 Damian Yerrick
 #
 # Copying and distribution of this file, with or without
 # modification, are permitted in any medium without royalty
@@ -73,7 +73,8 @@ debug: $(title).nes
 all: $(title).nes
 
 clean:
-	-rm $(objdir)/*.o $(objdir)/*.chr $(objdir)/*.ov53 $(objdir)/*.sav $(objdir)/*.pb53 $(objdir)/*.donut $(objdir)/*.s
+	-rm $(objdir)/*.o $(objdir)/*.chr $(objdir)/*.s $(objdir)/*.sav
+	-rm $(objdir)/*.pb53 $(objdir)/*.donut $(objdir)/*.minid $(objdir)/*.ov53
 
 # Rule to create or update the distribution zipfile by adding all
 # files listed in zip.in.  Actually the zipfile depends on every
