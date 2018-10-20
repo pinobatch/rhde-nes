@@ -14,7 +14,7 @@ title = rhde
 
 #CURDAY := $(shell echo $$(( ($$(date -d 'now' '+%s') / 86400) - 15928 )))
 #version = day$(CURDAY)
-version = forgithub
+version = 0.07-wip
 
 # Assembly language files that make up the PRG ROM
 align_sensitive_modules := vwf7 paldetect
@@ -85,8 +85,8 @@ clean:
 # makefile changes.
 dist: zip
 zip: $(title)-$(version).zip
-$(title)-$(version).zip: zip.in $(title).nes README.html CHANGES.txt $(objdir)/index.txt
-	zip -9 -u $@ -@ < $<
+$(title)-$(version).zip: zip.in $(title).nes README.md USAGE.html CHANGES.txt $(objdir)/index.txt
+	$(PY) tools/zipup.py $< $(title)-$(version) -o $@
 
 # Build zip.in from the list of files in the Git tree
 zip.in:

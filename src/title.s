@@ -85,14 +85,25 @@ loadtitlepalloop:
   lda #$1C
   ldy #$00
   jsr copyLineImg
+
   jsr clearLineImg
-  lda #>title_copr_msg
-  ldy #<title_copr_msg
+  lda #>title_copr_msg1
+  ldy #<title_copr_msg1
+  ldx #16
+  jsr vwfPuts
+  lda #$1E
+  ldy #$00
+  jsr copyLineImg
+
+  jsr clearLineImg
+  lda #>title_copr_msg2
+  ldy #<title_copr_msg2
   ldx #16
   jsr vwfPuts
   lda #$1F
   ldy #$00
   jsr copyLineImg
+
   lda #$FF
   sta cursor_y
   
@@ -592,7 +603,7 @@ uctions4_txt:
   .byte 0
 uctions5_txt:
   .incbin "uctions5.txt"
-  .byte LF, LF, .sprintf("Day %d: ROM ", BUILDDAY)
+  .byte LF, "ROM "
   .byte '0'|<(ROMPCT / 100 .MOD 10)
   .byte '0'|<(ROMPCT / 10 .MOD 10)
   .byte '.','0'|<(ROMPCT .MOD 10),"% full"
@@ -607,8 +618,10 @@ titlepal=*-1
   mbyt "   101629 ff101229 ff103729 ff101722 ff101629"
 title_pushstart_msg:
   .byte "Press Start Button",0
-title_copr_msg:
-  .byte $81," 2014 Damian Yerrick",0
+title_copr_msg1:
+  .byte $81," 2014, 2018",0
+title_copr_msg2:
+  .byte "Damian Yerrick",0
 title_options:
   .addr title_2pvs_msg, title_2pvslong_msg, title_2pcreative_msg
   .addr title_instructions_msg

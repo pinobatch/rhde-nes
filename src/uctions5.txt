@@ -1,13 +1,18 @@
 [5/5] Credits
 
-Concept by NovaSquirrel
-Program by Pino P.
+Damian Yerrick
+  @PinoBatch
+  Program, graphics, sound,
+  and tools
+Joshua Hoffman
+  @BushytailSkwirl
+  Concept and additional
+  graphics
+
 VWF renderer optimized
   by Blargg
-Graphics by Pino and Nova
-Sound by Pino, Ivan Larionov,
-  and The Eighth Bit
-Tools by Pino
+Additional sound by Ivan
+  Larionov and The Eighth Bit
 Made with Xubuntu, Python,
   cc65, and GIMP
 Greets to EFnet #nesdev,
