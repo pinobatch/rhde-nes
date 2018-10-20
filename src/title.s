@@ -129,7 +129,7 @@ clear1cloop:
   lda #VBLANK_NMI|BG_0000
   clc
   jsr ppu_screen_on
-  jsr update_sound
+  jsr pently_update
   inc cursor_y
   lda cursor_y
   cmp #$20
@@ -161,7 +161,7 @@ load_title_options_loop:
   ldy #0
   lda #VBLANK_NMI|BG_0000
   jsr ppu_screen_on
-  jsr update_sound
+  jsr pently_update
   inc cursor_y
   lda cursor_y
   cmp #NUM_TITLE_OPTIONS
@@ -290,7 +290,7 @@ loop:
   lda #VBLANK_NMI|BG_0000|OBJ_1000|0
   sec
   jsr ppu_screen_on
-  jsr update_sound
+  jsr pently_update
   jsr read_pads
 s0w0:
   bit PPUSTATUS
@@ -492,7 +492,7 @@ load_todo_done:
 
 .ifdef SFX_TEST
   lda #SFX_TEST
-  jsr start_sound
+  jsr pently_start_sound
 .endif
 
 loop:
@@ -506,7 +506,7 @@ loop:
   clc
   jsr ppu_screen_on
   jsr read_pads
-  jsr update_sound
+  jsr pently_update
   lda nmis
   sta CRCLO
   eor #$FF

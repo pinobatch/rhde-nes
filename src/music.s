@@ -21,32 +21,32 @@
 ;
 ;   Visit http://www.pineight.com/ for more information.
 
-.importzp psg_sfx_state
-.import soundBSS
-.import start_sound
-.export music_playing
-.export init_music, stop_music, update_music, update_music_ch
-.export music_play_note
-.include "musicseq.h"
+.importzp pently_zp_state
+.import pentlyBSS
+.import pently_start_sound
+.export pently_music_playing
+.export init_music, pently_stop_music, pently_update_music, pently_update_music_ch
+.export pently_play_note
+.include "pentlyseq.inc"
 
 ; these are used by callbacks
-.export rowsPerBeat, rowBeatPart, tempoCounterHi, tempoCounterLo
+.export pently_rows_per_beat, pently_row_beat_part, pently_tempoCounterHi, pently_tempoCounterLo
 
-.ifndef SOUND_NTSC_ONLY
-SOUND_NTSC_ONLY = 0
+.ifndef PENTLY_USE_PAL_ADJUST
+PENTLY_USE_PAL_ADJUST = 1
 .endif
-.if (!SOUND_NTSC_ONLY)
+.if PENTLY_USE_PAL_ADJUST
 .importzp tvSystem
 .endif
 
-.ifndef MUSIC_USE_ROW_CALLBACK
-MUSIC_USE_ROW_CALLBACK = 0
+.ifndef PENTLY_USE_ROW_CALLBACK
+PENTLY_USE_ROW_CALLBACK = 0
 .endif
-.if MUSIC_USE_ROW_CALLBACK
+.if PENTLY_USE_ROW_CALLBACK
 .import music_row_callback, music_dalsegno_callback
 .endif
 
-; psg_sfx_state:
+; pently_zp_state:
 ;       +0              +1              +2              +3
 ; $00 | Sq1 sound effect data ptr       Sq1 envelope data ptr
 ; $04-$0C repeat for Sq2, Tri, Noise
@@ -54,7 +54,7 @@ MUSIC_USE_ROW_CALLBACK = 0
 ; $14 | Sq2 music pattern data ptr      Unused
 ; $18-$20 repeat for Tri, Noise, Attack
 
-; soundBSS:
+; pentlyBSS:
 ;       +0              +1              +2              +3
 ; $00-$0F Sound effect state for Sq1, Sq2, Tri, Noise
 ; $00 | Effect rate     Rate counter    Last period MSB Effect length
@@ -67,32 +67,32 @@ MUSIC_USE_ROW_CALLBACK = 0
 ; $34 | Attack ch #     Unused          Rows per beat   Offset in beat
 ; $38-$3F Conductor state
 
-noteAttackPos = psg_sfx_state + 2
-musicPatternPos = psg_sfx_state + 16
-conductorPos = psg_sfx_state + 30
-attack_remainlen = soundBSS + 16
-attackPitch = soundBSS + 17
-noteEnvVol = soundBSS + 18
-notePitch = soundBSS + 19
-noteLegato = soundBSS + 32
-arpPhase = soundBSS + 33
-arpInterval1 = soundBSS + 34
-arpInterval2 = soundBSS + 35
-noteRowsLeft = soundBSS + 48
-noteInstrument = soundBSS + 49
-musicPattern = soundBSS + 50
-patternTranspose = soundBSS + 51
-attackChannel = soundBSS + 68
-unused69 = soundBSS + 69
-rowsPerBeat = soundBSS + 70
-rowBeatPart = soundBSS + 71
-tempoCounterLo = soundBSS + 72
-tempoCounterHi = soundBSS + 73
-music_tempoLo = soundBSS + 74
-music_tempoHi = soundBSS + 75
-conductorSegno = soundBSS + 76
-conductorWaitRows = soundBSS + 78
-music_playing = soundBSS + 79
+noteAttackPos = pently_zp_state + 2
+musicPatternPos = pently_zp_state + 16
+conductorPos = pently_zp_state + 30
+attack_remainlen = pentlyBSS + 16
+attackPitch = pentlyBSS + 17
+noteEnvVol = pentlyBSS + 18
+notePitch = pentlyBSS + 19
+noteLegato = pentlyBSS + 32
+arpPhase = pentlyBSS + 33
+arpInterval1 = pentlyBSS + 34
+arpInterval2 = pentlyBSS + 35
+noteRowsLeft = pentlyBSS + 48
+noteInstrument = pentlyBSS + 49
+musicPattern = pentlyBSS + 50
+patternTranspose = pentlyBSS + 51
+attackChannel = pentlyBSS + 68
+unused69 = pentlyBSS + 69
+pently_rows_per_beat = pentlyBSS + 70
+pently_row_beat_part = pentlyBSS + 71
+pently_tempoCounterLo = pentlyBSS + 72
+pently_tempoCounterHi = pentlyBSS + 73
+music_tempoLo = pentlyBSS + 74
+music_tempoHi = pentlyBSS + 75
+conductorSegno = pentlyBSS + 76
+conductorWaitRows = pentlyBSS + 78
+pently_music_playing = pentlyBSS + 79
 
 FRAMES_PER_MINUTE_PAL = 3000
 FRAMES_PER_MINUTE_NTSC = 3606
@@ -118,10 +118,10 @@ invdurations:
 .proc init_music
   asl a
   tax
-  lda songTable,x
+  lda pently_songs,x
   sta conductorPos
   sta conductorSegno
-  lda songTable+1,x
+  lda pently_songs+1,x
   sta conductorPos+1
   sta conductorSegno+1
 
@@ -154,11 +154,11 @@ invdurations:
   sta conductorWaitRows
   sta attackChannel
   lda #4
-  sta rowsPerBeat
+  sta pently_rows_per_beat
   lda #$FF
-  sta rowBeatPart
-  sta tempoCounterLo
-  sta tempoCounterHi
+  sta pently_row_beat_part
+  sta pently_tempoCounterLo
+  sta pently_tempoCounterHi
   lda #<300
   sta music_tempoLo
   lda #>300
@@ -166,32 +166,32 @@ invdurations:
 .endproc
 .proc resume_music
   lda #1
-  sta music_playing
+  sta pently_music_playing
   rts
 .endproc
 
-.proc stop_music
+.proc pently_stop_music
   lda #0
-  sta music_playing
+  sta pently_music_playing
   rts
 .endproc
 
-.proc update_music
-  lda music_playing
+.proc pently_update_music
+  lda pently_music_playing
   beq music_not_playing
   lda music_tempoLo
   clc
-  adc tempoCounterLo
-  sta tempoCounterLo
+  adc pently_tempoCounterLo
+  sta pently_tempoCounterLo
   lda music_tempoHi
-  adc tempoCounterHi
-  sta tempoCounterHi
+  adc pently_tempoCounterHi
+  sta pently_tempoCounterHi
   bcs new_tick
 music_not_playing:
   rts
 new_tick:
 
-.if ::SOUND_NTSC_ONLY
+.if ::PENTLY_USE_PAL_ADJUST = 0
   ldy #0
 .else
   ldy tvSystem
@@ -201,24 +201,24 @@ is_ntsc_1:
 .endif
 
   ; Subtract tempo
-  lda tempoCounterLo
+  lda pently_tempoCounterLo
   sbc fpmLo,y
-  sta tempoCounterLo
-  lda tempoCounterHi
+  sta pently_tempoCounterLo
+  lda pently_tempoCounterHi
   sbc fpmHi,y
-  sta tempoCounterHi
+  sta pently_tempoCounterHi
   
   ; Update row
-  ldy rowBeatPart
+  ldy pently_row_beat_part
   iny
-  cpy rowsPerBeat
+  cpy pently_rows_per_beat
   bcc :+
   ldy #0
 :
-  sty rowBeatPart
+  sty pently_row_beat_part
   
 
-.if ::MUSIC_USE_ROW_CALLBACK
+.if ::PENTLY_USE_ROW_CALLBACK
   jsr music_row_callback
 .endif
 
@@ -243,9 +243,9 @@ doConductor:
     and #%00000111
     tay
     lda durations,y
-    sta rowsPerBeat
+    sta pently_rows_per_beat
     ldy #0
-    sty rowBeatPart
+    sty pently_row_beat_part
     jmp doConductor
   @isTempoChange:
     and #%00000111
@@ -275,10 +275,10 @@ doConductor:
   cmp #CON_FINE
   bne @notFine
     lda #0
-    sta music_playing
+    sta pently_music_playing
     sta music_tempoHi
     sta music_tempoLo
-.if ::MUSIC_USE_ROW_CALLBACK
+.if ::PENTLY_USE_ROW_CALLBACK
     clc
     jmp music_dalsegno_callback
 .else
@@ -301,7 +301,7 @@ doConductor:
     sta conductorPos
     lda conductorSegno+1
     sta conductorPos+1
-.if ::MUSIC_USE_ROW_CALLBACK
+.if ::PENTLY_USE_ROW_CALLBACK
     sec
     jsr music_dalsegno_callback
 .endif
@@ -446,7 +446,7 @@ anotherPatternByte:
     clc
     adc patternTranspose,x
     ldy noteInstrument,x
-    jsr music_play_note
+    jsr pently_play_note
     jmp skipNote
 
 isDrumNote:
@@ -454,13 +454,13 @@ isDrumNote:
   asl a
   pha
   tax
-  lda drumSFX,x
-  jsr start_sound
+  lda pently_drums,x
+  jsr pently_start_sound
   pla
   tax
-  lda drumSFX+1,x
+  lda pently_drums+1,x
   bmi noSecondDrum
-  jsr start_sound
+  jsr pently_start_sound
 noSecondDrum:
   ldx 5
   jmp skipNote
@@ -476,9 +476,9 @@ startPattern:
     rts
   @notSilentPattern:
   tay
-  lda musicPatternTable,y
+  lda pently_patterns,y
   sta musicPatternPos,x
-  lda musicPatternTable+1,y
+  lda pently_patterns+1,y
   sta musicPatternPos+1,x
   rts
 .endproc
@@ -486,7 +486,7 @@ startPattern:
 ;;
 ; Plays note A on channel X (0, 4, 8, 12) with instrument Y.
 ; Trashes 0-1
-.proc music_play_note
+.proc pently_play_note
 notenum = 0
 instrument_id = 1
 
@@ -511,7 +511,7 @@ instrument_id = 1
     sta arpPhase,x
     lda instrument_id
     sta noteInstrument,x
-    lda instrumentTable,y
+    lda pently_instruments,y
     asl a
     asl a
     asl a
@@ -520,7 +520,7 @@ instrument_id = 1
     sta noteEnvVol,x
   skipSustainPart:
 
-  lda instrumentTable+4,y
+  lda pently_instruments+4,y
   beq skipAttackPart
     txa
     pha
@@ -532,11 +532,11 @@ instrument_id = 1
     notAttackChannel:
     lda notenum
     sta attackPitch,x
-    lda instrumentTable+4,y
+    lda pently_instruments+4,y
     sta noteAttackPos+1,x
-    lda instrumentTable+3,y
+    lda pently_instruments+3,y
     sta noteAttackPos,x
-    lda instrumentTable+2,y
+    lda pently_instruments+2,y
     and #$7F
     sta attack_remainlen,x
     pla
@@ -545,13 +545,13 @@ instrument_id = 1
   rts
 .endproc
 
-.proc update_music_ch
+.proc pently_update_music_ch
 xsave = 0
 ysave = 1
 out_volume = 2
 out_pitch = 3
 
-  lda music_playing
+  lda pently_music_playing
   beq silenced
   lda attack_remainlen,x
   beq noAttack
@@ -630,13 +630,13 @@ notSilenced:
   adc noteInstrument,x
   tay  
   lda out_volume
-  eor instrumentTable,y
+  eor pently_instruments,y
   and #$0F
-  eor instrumentTable,y
+  eor pently_instruments,y
   sta out_volume
   lda noteEnvVol,x
   sec
-  sbc instrumentTable+1,y
+  sbc pently_instruments+1,y
   bcc silenced
   sta noteEnvVol,x
   lda notePitch,x
@@ -645,15 +645,15 @@ notSilenced:
   ldy ysave
 
   ; bit 7 of attribute 2: cut note when half a row remains
-  lda instrumentTable+2,y
+  lda pently_instruments+2,y
   bpl notCutNote
   lda noteRowsLeft,x
   bne notCutNote
 
   clc
-  lda tempoCounterLo
+  lda pently_tempoCounterLo
   adc #<(FRAMES_PER_MINUTE_NTSC/2)
-  lda tempoCounterHi
+  lda pently_tempoCounterHi
   adc #>(FRAMES_PER_MINUTE_NTSC/2)
   bcc notCutNote
   

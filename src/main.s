@@ -19,7 +19,7 @@
 .include "global.inc"
 .include "mbyt.inc"
 
-.export psg_sfx_state
+.export pently_zp_state
 .export INITIAL_CASH:absolute
 OAM = $0200
 
@@ -61,7 +61,7 @@ cash_hi:       .res 2
 player_race:   .res 2
 hra_wins:      .res 2
 debughex:      .res 2
-psg_sfx_state: .res 36
+pently_zp_state: .res 36
 
 .segment "INESHDR"
   .byt "NES",$1A  ; magic signature
@@ -132,7 +132,7 @@ clear_zp:
   ; Set up PRG RAM
   ; Copy initial high scores, bankswitching trampolines, etc. to RAM
   ; Set up initial CHR banks
-  jsr init_sound
+  jsr pently_init
 
 vwait2:
   bit PPUSTATUS  ; After the second vblank, we know the PPU has
@@ -353,7 +353,7 @@ not_won_yet:
   lda #MUSIC_IRONIC_BATTLE
   jsr init_music
   jsr battle_phase
-  jsr stop_music
+  jsr pently_stop_music
 
   ; Now disconnect and get ready to build
   jsr disconnect_field_start
@@ -394,7 +394,7 @@ not_won_yet:
 :
   cmp nmis
   beq :-
-  jsr update_sound
+  jsr pently_update
   lda side_dirty+0
   ora side_dirty+1
   and #(DIRTY_DOORLESS|DIRTY_RM_ENDS|DIRTY_ENCLOSE)
@@ -417,7 +417,7 @@ loop:
 :
   jsr build_choose_redraw
   jsr bgup_vsync
-  jsr update_sound
+  jsr pently_update
   lda phase_seconds
   bne loop
   jmp read_pads
@@ -494,7 +494,7 @@ stillpaused:
   lda #OBJ_ON
   sta PPUMASK
   jsr read_pads
-  jsr update_sound
+  jsr pently_update
   lda new_keys
   ora new_keys+1
   and #KEY_START

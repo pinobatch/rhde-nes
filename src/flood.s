@@ -810,7 +810,7 @@ not_doorless:
   bit enclose_play_sfx
   bpl set_recopy
   lda #SFX_ENCLOSE
-  jsr start_sound
+  jsr pently_start_sound
 set_recopy:
   ldx enclose_turn
   lda side_dirty,x  ; Mark this side as needing recopied

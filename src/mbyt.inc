@@ -1,5 +1,6 @@
 ; mbyt.s
 ; Multibyte constant macro for ca65
+; analogous to Python 3 bytes.fromhex()
 ;
 ; Copyright 2013 Damian Yerrick
 ; Copying and distribution of this file, with or without

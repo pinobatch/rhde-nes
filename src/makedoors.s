@@ -39,13 +39,13 @@ breakdoors_x: .res MAX_BREAKDOORS
 
 loop:
   jsr read_pads
-  jsr update_sound
+  jsr pently_update
   jsr move_cursors
   jsr enclose_run_step
   jsr countdown_logic
   bcs not_54321
   lda #SFX_COUNTDOWN
-  jsr start_sound
+  jsr pently_start_sound
 not_54321:
   lda phase_seconds
   bne not_last_second
@@ -95,7 +95,7 @@ notgrass:
   ora side_dirty,x
   sta side_dirty,x
   lda #SFX_PLACE
-  jsr start_sound
+  jsr pently_start_sound
   ldx cur_turn
 notA:
   dex

@@ -360,7 +360,7 @@ cannon_idx = $05
   jsr update_around_column_y
 
   lda #SFX_LAUNCH
-  jmp start_sound
+  jmp pently_start_sound
 .endproc
 
 ;;
@@ -494,7 +494,7 @@ cooldown_loop:
   ldy 0
   jsr update_around_column_y
   lda #SFX_SCANBEEP
-  jsr start_sound
+  jsr pently_start_sound
   ldx cannonnum
 already_cool:
   dex
@@ -745,7 +745,7 @@ no_s_splash:
   tax
   jsr update_around_column_y
   lda #SFX_EXPLODE
-  jmp start_sound
+  jmp pently_start_sound
 
 check_splash_here:
   lda (fieldlo),y

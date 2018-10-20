@@ -9,10 +9,10 @@
 ;
 ; Translation: Go ahead and make your ReMixes, but credit me.
 
-.include "musicseq.h"
+.include "pentlyseq.inc"
 .segment "RODATA"
 
-psg_sound_table:
+pently_sfx_table:
   sfxdef turn_snd,     6, 1, 0
   sfxdef shift_snd,    2, 1, 0
   sfxdef land_snd,     8, 1, 0
@@ -89,7 +89,7 @@ track2_attack:
   .dbyt $0700,$0B00,$0C00
 
 ; Each drum consists of one or two sound effects.
-drumSFX:
+pently_drums:
   .byt 10, 11
   .byt 12, 13
   .byt 14, <-1
@@ -103,7 +103,7 @@ OHAT = 3*8
 KICKOHAT = 4*8
 SNAREOHAT = 5*8
 
-instrumentTable:
+pently_instruments:
   ; first byte: initial duty (0/4/8/c) and volume (1-F)
   ; second byte: volume decrease every 16 frames
   ; third byte:
@@ -123,17 +123,17 @@ instrumentTable:
   .byt $07, 3, $83  ; lmia part 1 string
   .addr track2_attack
 
-songTable:
+pently_songs:
   .addr kalinka_conductor
   .addr track2_conductor
 
-musicPatternTable:
-kalinka_pats = (* - musicPatternTable) >> 1
+pently_patterns:
+kalinka_pats = (* - pently_patterns) >> 1
   .addr kalinka_intro, kalinka_drumstart
   .addr kalinka_sq1, kalinka_bass, kalinka_drum
   .addr kalinka_drumfill, kalinka_B_sq1, kalinka_B_bass
   .addr kalinka_ending_sq1, kalinka_ending_sq2, kalinka_ending_tri
-track2_pats = (* - musicPatternTable) >> 1
+track2_pats = (* - pently_patterns) >> 1
   .addr track2_sq2_A, track2_sq1_A, track2_sq1_Aend
   .addr track2_sq2_B, track2_sq1_B
   .addr track2_tri_A, track2_tri_B, track2_drums, track2_tri_Aend

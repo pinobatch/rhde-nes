@@ -48,7 +48,7 @@ initloop:
   jsr setup_stock_view
   jsr build_choose_redraw
   jsr bgup_vsync
-  jsr update_sound
+  jsr pently_update
   ldx cur_turn
   dex
   bpl initloop
@@ -80,12 +80,12 @@ loop:
   ldx oam_used
   jsr ppu_clear_oam
   jsr bgup_vsync
-  jsr update_sound
+  jsr pently_update
 
   jsr countdown_logic
   bcs not_54321
   lda #SFX_COUNTDOWN
-  jsr start_sound
+  jsr pently_start_sound
 not_54321:
   lda phase_seconds
 .if 1
@@ -105,7 +105,7 @@ not_54321:
   sta side_dirty+0
   sta side_dirty+1
   jsr bgup_vsync
-  jmp update_sound
+  jmp pently_update
 .endproc
 
 .proc furnish_move_cursor
@@ -143,7 +143,7 @@ notA:
   ; Left: Go to stock view
 isLeft:
   lda #SFX_TURN_PAGE
-  jsr start_sound
+  jsr pently_start_sound
   jmp setup_stock_view
 notLeft:
   
@@ -159,7 +159,7 @@ notLeft:
   cmp form_pagelen,x
   bcc notUp
   lda #SFX_TURN_PAGE
-  jsr start_sound
+  jsr pently_start_sound
   ldx cur_turn
   lda #DIRTY_FORM
   ora side_dirty,x
@@ -201,7 +201,7 @@ isUp:
 .endproc
 .proc find_previous_shopitem
   lda #SFX_TURN_PAGE
-  jsr start_sound
+  jsr pently_start_sound
   ldx cur_turn
   dec form_pagenum,x
   bpl up_nowrap
@@ -302,7 +302,7 @@ affordable:
   inc player_inv,x
   pha
   lda #SFX_SCANBEEP
-  jsr start_sound
+  jsr pently_start_sound
   pla
   tax
 

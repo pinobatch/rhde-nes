@@ -272,6 +272,6 @@ MUSIC_BUILD = 0
 MUSIC_IRONIC_BATTLE = 1
 
 ; sound
-.global getTVSystem, init_sound, start_sound, update_sound
-.global init_music, stop_music, resume_music, music_play_note
+.global getTVSystem, pently_init, pently_start_sound, pently_update
+.global init_music, pently_stop_music, resume_music, pently_play_note
 .globalzp tvSystem

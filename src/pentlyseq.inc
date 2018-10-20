@@ -5,8 +5,8 @@
 ; the copyright notice and this notice are preserved in all source
 ; code copies.  This file is offered as-is, without any warranty.
 
-.global drumSFX, psg_sound_table
-.global musicPatternTable, instrumentTable, songTable
+.global pently_drums, pently_sfx_table
+.global pently_patterns, pently_instruments, pently_songs
 .globalzp NUM_SONGS
 
 ; Sound effect/drum definitions

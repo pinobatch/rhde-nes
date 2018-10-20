@@ -9,12 +9,12 @@
 ; code copies.  This file is offered as-is, without any warranty.
 ;
 .import periodTableLo, periodTableHi
-.import update_music, update_music_ch, music_playing, psg_sound_table
-.export init_sound, start_sound, update_sound, soundBSS
+.import pently_update_music, pently_update_music_ch, pently_music_playing, pently_sfx_table
+.export pently_init, pently_start_sound, pently_update, pentlyBSS
 
 ; as of the implementation of "attacks" in the instrument engine,
 ; this is a 36 byte buffer
-.importzp psg_sfx_state
+.importzp pently_zp_state
 
 SNDCHN = $4015
 
@@ -22,29 +22,29 @@ SNDCHN = $4015
 ; $4000 to $4004 if $4004 is idle and $4000 is not, or if $4004 has
 ; less sfx data left to play than $4000.  Turn this off to force all
 ; pulse sfx to be played on $4000.
-SQUARE_POOLING = 1
+PENTLY_USE_SQUARE_POOLING = 1
 
 ; As of 2011-03-10, a sound effect interrupts a musical instrument on
 ; the same channel only if the volume of the sfx is greater than that
 ; of the instrument.  Turn this off to force sound fx to interrupt
 ; the music whenever sfx data remains on that channel, even if the
 ; music is louder.
-KEEP_MUSIC_IF_LOUDER = 1
+PENTLY_USE_MUSIC_IF_LOUDER = 1
 
 .segment "BSS"
-soundBSS: .res 80
+pentlyBSS: .res 80
 
-psg_sfx_datalo = psg_sfx_state + 0
-psg_sfx_datahi = psg_sfx_state + 1
-psg_sfx_rate = soundBSS + 0
-psg_sfx_ratecd = soundBSS + 1
-psg_sfx_lastfreqhi = soundBSS + 2
-psg_sfx_remainlen = soundBSS + 3
+sfx_datalolo = pently_zp_state + 0
+sfx_datalohi = pently_zp_state + 1
+sfx_rate = pentlyBSS + 0
+sfx_ratecd = pentlyBSS + 1
+ch_lastfreqhi = pentlyBSS + 2
+sfx_remainlen = pentlyBSS + 3
 
-.ifndef SOUND_NTSC_ONLY
-SOUND_NTSC_ONLY = 0
+.ifndef PENTLY_USE_PAL_ADJUST
+PENTLY_USE_PAL_ADJUST = 1
 .endif
-.if (!SOUND_NTSC_ONLY)
+.if PENTLY_USE_PAL_ADJUST
 .importzp tvSystem
 .endif
 
@@ -53,18 +53,18 @@ SOUND_NTSC_ONLY = 0
 ;;
 ; Initializes all sound channels.
 ; Call this at the start of a program or as a "panic button" before
-; entering a long stretch of code where you don't call update_sound.
+; entering a long stretch of code where you don't call pently_update.
 ;
-.proc init_sound
+.proc pently_init
   lda #$0F
   sta SNDCHN
   lda #$30
   sta $4000
   sta $4004
   sta $400C
-  sta psg_sfx_lastfreqhi+0
-  sta psg_sfx_lastfreqhi+8
-  sta psg_sfx_lastfreqhi+4
+  sta ch_lastfreqhi+0
+  sta ch_lastfreqhi+8
+  sta ch_lastfreqhi+4
   lda #$80
   sta $4008
   lda #8
@@ -74,11 +74,11 @@ SOUND_NTSC_ONLY = 0
   sta $4003
   sta $4007
   sta $400F
-  sta psg_sfx_remainlen+0
-  sta psg_sfx_remainlen+4
-  sta psg_sfx_remainlen+8
-  sta psg_sfx_remainlen+12
-  sta music_playing
+  sta sfx_remainlen+0
+  sta sfx_remainlen+4
+  sta sfx_remainlen+8
+  sta sfx_remainlen+12
+  sta pently_music_playing
   lda #64
   sta $4011
   rts
@@ -90,7 +90,7 @@ SOUND_NTSC_ONLY = 0
 ;
 ; @param A sound effect number (0-63)
 ;
-.proc start_sound
+.proc pently_start_sound
 snddatalo = 0
 snddatahi = 1
 sndchno = 2
@@ -100,29 +100,29 @@ sndrate = 4
   asl a
   asl a
   tax
-  lda psg_sound_table,x
+  lda pently_sfx_table,x
   sta snddatalo
-  lda psg_sound_table+1,x
+  lda pently_sfx_table+1,x
   sta snddatahi
-  lda psg_sound_table+2,x
+  lda pently_sfx_table+2,x
   and #$0C
   sta sndchno
-  lda psg_sound_table+2,x
+  lda pently_sfx_table+2,x
   lsr a
   lsr a
   lsr a
   lsr a
   sta sndrate
   
-  lda psg_sound_table+3,x
+  lda pently_sfx_table+3,x
   sta sndlen
 
   ; split up square wave sounds between $4000 and $4004
-  .if ::SQUARE_POOLING
+  .if ::PENTLY_USE_SQUARE_POOLING
     lda sndchno
     bne not_ch0to4  ; if not ch 0, don't try moving it
-      lda psg_sfx_remainlen+4
-      cmp psg_sfx_remainlen
+      lda sfx_remainlen+4
+      cmp sfx_remainlen
       bcs not_ch0to4
       lda #4
       sta sndchno
@@ -131,18 +131,18 @@ sndrate = 4
 
   ldx sndchno
   lda sndlen
-  cmp psg_sfx_remainlen,x
+  cmp sfx_remainlen,x
   bcc ch_full
   lda snddatalo
-  sta psg_sfx_datalo,x
+  sta sfx_datalolo,x
   lda snddatahi
-  sta psg_sfx_datahi,x
+  sta sfx_datalohi,x
   lda sndlen
-  sta psg_sfx_remainlen,x
+  sta sfx_remainlen,x
   lda sndrate
-  sta psg_sfx_rate,x
+  sta sfx_rate,x
   lda #0
-  sta psg_sfx_ratecd,x
+  sta sfx_ratecd,x
 ch_full:
   rts
 .endproc
@@ -151,11 +151,11 @@ ch_full:
 ;;
 ; Updates sound effect channels.
 ;
-.proc update_sound
-  jsr update_music
+.proc pently_update
+  jsr pently_update_music
   ldx #12
 loop:
-  jsr update_music_ch
+  jsr pently_update_music_ch
   jsr update_one_ch
   dex
   dex
@@ -169,7 +169,7 @@ loop:
 
   ; At this point, the music engine should have left duty and volume
   ; in 2 and pitch in 3.
-  lda psg_sfx_remainlen,x
+  lda sfx_remainlen,x
   bne ch_not_done
   lda 2
   bne update_channel_hw
@@ -181,29 +181,29 @@ loop:
   not_triangle_kill:
   sta $4000,x
   lda #$FF
-  sta psg_sfx_lastfreqhi,x
+  sta ch_lastfreqhi,x
   rts
 ch_not_done:
 
   ; playback rate divider
-  dec psg_sfx_ratecd,x
+  dec sfx_ratecd,x
   bpl rate_divider_cancel
-  lda psg_sfx_rate,x
-  sta psg_sfx_ratecd,x
+  lda sfx_rate,x
+  sta sfx_ratecd,x
 
   ; fetch the instruction
-  lda psg_sfx_datalo+1,x
+  lda sfx_datalolo+1,x
   sta 1
-  lda psg_sfx_datalo,x
+  lda sfx_datalolo,x
   sta 0
   clc
   adc #2
-  sta psg_sfx_datalo,x
+  sta sfx_datalolo,x
   bcc :+
-  inc psg_sfx_datahi,x
+  inc sfx_datalohi,x
 :
   ldy #0
-  .if ::KEEP_MUSIC_IF_LOUDER
+  .if ::PENTLY_USE_MUSIC_IF_LOUDER
     lda 2
     and #$0F
     sta 4
@@ -220,7 +220,7 @@ ch_not_done:
   lda (0),y
   sta 3
 music_was_louder:
-  dec psg_sfx_remainlen,x
+  dec sfx_remainlen,x
 
 update_channel_hw:
   lda 2
@@ -236,7 +236,7 @@ rate_divider_cancel:
 notnoise:
   sta $4000,x
   ldy 3
-.if ::SOUND_NTSC_ONLY = 0
+.if ::PENTLY_USE_PAL_ADJUST
   lda tvSystem
   lsr a
   bcc :+
@@ -246,9 +246,9 @@ notnoise:
   lda periodTableLo,y
   sta $4002,x
   lda periodTableHi,y
-  cmp psg_sfx_lastfreqhi,x
+  cmp ch_lastfreqhi,x
   beq no_change_to_hi_period
-  sta psg_sfx_lastfreqhi,x
+  sta ch_lastfreqhi,x
   sta $4003,x
 no_change_to_hi_period:
 

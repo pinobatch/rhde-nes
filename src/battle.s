@@ -105,7 +105,7 @@ mainloop:
   ora new_keys+1
   sta last_frame_keys+1
   jsr read_pads
-  jsr update_sound
+  jsr pently_update
   lda phase_seconds
   beq no_control
   ldx #0
@@ -145,11 +145,11 @@ no_control:
   jsr countdown_logic
   bcs not_54321
   lda #SFX_COUNTDOWN
-  jsr start_sound
+  jsr pently_start_sound
 not_54321:
   lda phase_seconds
   bne mainloop
-  jsr stop_music
+  jsr pently_stop_music
   jsr any_cannon_missiles_left
   bpl mainloop
 .endif
@@ -478,7 +478,7 @@ switchNotWrapEnd:
   beq notSwitchUnits
   sta player_cur_unit,y
   lda #SFX_TURN_PAGE
-  jmp start_sound
+  jmp pently_start_sound
 notSwitchUnits:
   rts
 .endproc
@@ -523,7 +523,7 @@ unitnum = $07
   lda #$FF
   sta unit_carry_item,y
   lda #SFX_PLACE
-  jsr start_sound
+  jsr pently_start_sound
 pickup_done:
   lda unitnum
   and #$01
@@ -549,7 +549,7 @@ itemoffset = $02
   ldy $07
   sta unit_carry_item,y
   lda #SFX_TURN
-  jsr start_sound
+  jsr pently_start_sound
   ldy $07
   tya
   and #$01
@@ -615,7 +615,7 @@ is_weapon_or_opponents:
   jsr erase_furni
 
   lda #0
-  jmp start_sound
+  jmp pently_start_sound
 not_pickup:
   rts
 .endproc
@@ -685,7 +685,7 @@ sidetmp = $07  ; sound modifies $00-$04, so stay out of its way
   tax
   inc player_inv,x
   lda #SFX_ENCLOSE
-  jsr start_sound
+  jsr pently_start_sound
   ldx sidetmp
   lda #$FF
   sta unit_carry_item,x
@@ -920,10 +920,10 @@ no_opponent:
   lda numhit
   beq nonehit
   lda #SFX_PLACE
-  jsr start_sound
+  jsr pently_start_sound
 nonehit:
   lda #SFX_TURN_PAGE
-  jmp start_sound
+  jmp pently_start_sound
   rts
 .endproc
 

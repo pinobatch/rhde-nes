@@ -71,7 +71,7 @@ player_inv: .res 2 * NUM_FURNIS
   ora side_dirty,x
   sta side_dirty,x
   lda #SFX_SCANBEEP
-  jmp start_sound
+  jmp pently_start_sound
 
 not_selling:
   ; lda #0  ; already 0 from the B button test
@@ -97,7 +97,7 @@ right_notpast:
   rts
 go_to_shop:
   lda #SFX_TURN_PAGE
-  jsr start_sound
+  jsr pently_start_sound
   jmp setup_shop_view
 notRight:
 
@@ -282,7 +282,7 @@ notA:
   sta placement_item,x
   jsr autorepeat  ; allow the B press to get into the repeat buffer
   lda #SFX_TURN
-  jmp start_sound
+  jmp pently_start_sound
 notB:
   asl a
   rol a
@@ -381,7 +381,7 @@ found_furni:
     rts
   .else
     lda #SFX_TURN
-    jsr start_sound
+    jsr pently_start_sound
     jmp setup_stock_view
   .endif
 .endproc
@@ -606,7 +606,7 @@ nowrite:
 
   ; And remove it from player's inventory
   lda #SFX_PLACE
-  jsr start_sound
+  jsr pently_start_sound
   ldx cur_turn
   jsr update_around_cursor
   lda placement_item,x

@@ -120,7 +120,7 @@ clr_vwf_loop:
   ldy #32
   jsr clear_vwf_rows
   jsr screen_back_on
-  jsr update_sound
+  jsr pently_update
   ldx cursor_x
   inx
   inx
@@ -141,7 +141,7 @@ lineloop:
   ldy #$00
   jsr copyLineImg
   jsr screen_back_on
-  jsr update_sound
+  jsr pently_update
   lda cursor_y
   cmp #6
   bcc lineloop
@@ -185,7 +185,7 @@ lineloop:
   dex
   bpl :-
 
-  jsr update_sound
+  jsr pently_update
   jmp read_pads
 .endproc
 
@@ -455,7 +455,7 @@ write_loop:
 
 .proc remove_alertbox
   lda #7
-  jsr start_sound
+  jsr pently_start_sound
   jsr delay_500
   lda #6
   sta copy_region_left

@@ -237,7 +237,7 @@ not_end_of_pieces:
 :
   sta cur_piece_lo,x
   lda #SFX_TURN
-  jsr start_sound
+  jsr pently_start_sound
 no_rotation:
   ; fall through to wall kick
 .endproc
@@ -494,7 +494,7 @@ putnoblk:
   lda #$FF
   sta enclose_play_sfx
   lda #SFX_PLACE
-  jmp start_sound
+  jmp pently_start_sound
 
 nothing_placed:
   rts
@@ -573,7 +573,7 @@ player_init:
   
 forever:
   jsr read_pads
-  jsr update_sound
+  jsr pently_update
 
   lda cur_piece_hi+0
   and cur_piece_hi+1
@@ -585,7 +585,7 @@ forever:
   bit next_piece+0
   bmi not_54321
   lda #SFX_COUNTDOWN
-  jsr start_sound
+  jsr pently_start_sound
 not_54321:
   lda phase_seconds
   bne not_new_second
@@ -602,7 +602,7 @@ kill_next:
   sta next_piece+1
   lda #PLACE_LAST_PIECE_DURATION
   sta phase_seconds
-;  jsr stop_music
+;  jsr pently_stop_music
 not_new_second:
 
   ldx #1
