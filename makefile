@@ -14,7 +14,7 @@ title = rhde
 
 #CURDAY := $(shell echo $$(( ($$(date -d 'now' '+%s') / 86400) - 15928 )))
 #version = day$(CURDAY)
-version = 0.07-wip
+version = 0.07
 
 # Assembly language files that make up the PRG ROM
 align_sensitive_modules := vwf7 paldetect
@@ -23,7 +23,7 @@ game_modules := \
   makedoors shopping furnistock hra \
   battle missiles droppedfurni build
 lib_modules := vwf_draw ppuclear pads bcd unpb53 donut math
-audio_modules := sound music musicseq ntscPeriods
+audio_modules := pentlysound pentlymusic musicseq ntscPeriods
 objlist := $(align_sensitive_modules) $(game_modules) \
   $(lib_modules) $(audio_modules)
 
