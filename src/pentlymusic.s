@@ -1,25 +1,12 @@
-; music.s
-; part of sound engine for Concentration Room, Thwaite, Zap Ruder,
-; and RHDE
+; pentlymusic.s
+; part of Pently audio driver for Concentration Room, Thwaite,
+; Zap Ruder, and RHDE
 
-;;; Copyright (C) 2009-2011 Damian Yerrick
+; Copyright (C) 2009-2014 Damian Yerrick
 ;
-;   This program is free software; you can redistribute it and/or
-;   modify it under the terms of the GNU General Public License
-;   as published by the Free Software Foundation; either version 3
-;   of the License, or (at your option) any later version.
+; License: zlib
 ;
-;   This program is distributed in the hope that it will be useful,
-;   but WITHOUT ANY WARRANTY; without even the implied warranty of
-;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;   GNU General Public License for more details.
-;
-;   You should have received a copy of the GNU General Public License
-;   along with this program; if not, write to 
-;     Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-;     Boston, MA  02111-1307, USA.
-;
-;   Visit http://www.pineight.com/ for more information.
+; Visit http://www.pineight.com/ for more information.
 
 .importzp pently_zp_state
 .import pentlyBSS

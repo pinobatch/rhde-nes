@@ -1,9 +1,7 @@
-; Copyright 2010 Damian Yerrick
+; Constant and macro dDefinitions for Pently 4
+; Copyright 2010-2014 Damian Yerrick
 ;
-; Copying and distribution of this file, with or without
-; modification, are permitted in any medium without royalty provided
-; the copyright notice and this notice are preserved in all source
-; code copies.  This file is offered as-is, without any warranty.
+; License: zlib
 
 .global pently_drums, pently_sfx_table
 .global pently_patterns, pently_instruments, pently_songs

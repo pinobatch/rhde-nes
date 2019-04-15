@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-filenames = ["240pee.nes", "240pee-bnrom.nes"]
+filenames = ["rhde.nes"]
 for filename in filenames:
     with open(filename, "rb") as infp:
         infp.read(16)

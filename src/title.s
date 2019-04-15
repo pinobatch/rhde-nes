@@ -619,7 +619,7 @@ titlepal=*-1
 title_pushstart_msg:
   .byte "Press Start Button",0
 title_copr_msg1:
-  .byte $81," 2014, 2018",0
+  .byte $81," 2014, 2019",0
 title_copr_msg2:
   .byte "Damian Yerrick",0
 title_options:

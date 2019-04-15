@@ -1,4 +1,4 @@
-0.07 (2018-10-xx)
+0.07 (2019-04-15)
 * Raise cap to to 8 rockets per side
 * Replace build phase music
 * Switch from PB53 to JRoatch's Donut codec

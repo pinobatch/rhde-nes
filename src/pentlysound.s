@@ -1,12 +1,10 @@
-; sound.s
-; part of sound engine for Concentration Room, Thwaite, Zap Ruder,
-; and RHDE
+; pentlysound.s
+; part of Pently audio driver for Concentration Room, Thwaite,
+; Zap Ruder, and RHDE
+;
 ; Copyright 2009-2014 Damian Yerrick
 ;
-; Copying and distribution of this file, with or without
-; modification, are permitted in any medium without royalty provided
-; the copyright notice and this notice are preserved in all source
-; code copies.  This file is offered as-is, without any warranty.
+; License: zlib
 ;
 .import periodTableLo, periodTableHi
 .import pently_update_music, pently_update_music_ch, pently_music_playing, pently_sfx_table
