@@ -46,185 +46,89 @@ cel Ps2  80 32  8 16  84 38
 cel Ps3  96 32  8 16
 cel Ps4 112 32  8 16 116 42
 
+celseq Ne
+move Ne1 by 2 0
+move Ne2 by 2 0
+move Ne3 by 2 0
+move Ne4 by 2 0
+celseq Nw
+move Nw1 by -2 0
+move Nw2 by -2 0
+move Nw3 by -2 0
+move Nw4 by -2 0
+celseq Nn
+move Nn1 by 0 -2
+move Nn2 by 0 -2
+move Nn3 by 0 -2
+move Nn4 by 0 -2
+celseq Ns
+move Ns1 by 0 2
+move Ns2 by 0 2
+move Ns3 by 0 2
+move Ns4 by 0 2
+
+celseq Pe
+move Pe1 by 2 0
+move Pe2 by 2 0
+move Pe3 by 2 0
+move Pe4 by 2 0
+celseq Pw
+move Pw1 by -2 0
+move Pw2 by -2 0
+move Pw3 by -2 0
+move Pw4 by -2 0
+celseq Pn
+move Pn1 by 0 -2
+move Pn2 by 0 -2
+move Pn3 by 0 -2
+move Pn4 by 0 -2
+celseq Ps
+move Ps1 by 0 2
+move Ps2 by 0 2
+move Ps3 by 0 2
+move Ps4 by 0 2
+
 # Pace 1
-layer  1 actors Ne1   4  12
-layer  3 actors Nw1  36  28
-layer  5 actors Nn1  28  20
-layer  7 actors Ns1  12  20
-layer  9 actors Pe1  36  12
-layer 11 actors Pw1   4  28
-layer 12 actors Pw1  68  28
-layer 13 actors Pn1  60  20
-layer 15 actors Ps1  44  20
+layer  1 actors Ne    2  12
+layer  3 actors Nw   38  28
+layer  5 actors Nn   28  22
+layer  7 actors Ns   12  18
+layer  9 actors Pe   34  12
+layer 11 actors Pw    6  28
+layer 12 actors Pw   70  28
+layer 13 actors Pn   60  22
+layer 15 actors Ps   44  18
 wait 200
-move  1 Ne2 by  2  0
-move  3 Nw2 by -2  0
-move  5 Nn2 by  0 -2
-move  7 Ns2 by  0  2
-move  9 Pe2 by  2  0
-move 11 Pw2 by -2  0
-move 12 Pw2 by -2  0
-move 13 Pn2 by  0 -2
-move 15 Ps2 by  0  2
 wait 200
-move  1 Ne3 by  2  0
-move  3 Nw3 by -2  0
-move  5 Nn3 by  0 -2
-move  7 Ns3 by  0  2
-move  9 Pe3 by  2  0
-move 11 Pw3 by -2  0
-move 12 Pw3 by -2  0
-move 13 Pn3 by  0 -2
-move 15 Ps3 by  0  2
 wait 200
-move  1 Ne4 by  2  0
-move  3 Nw4 by -2  0
-move  5 Nn4 by  0 -2
-move  7 Ns4 by  0  2
-move  9 Pe4 by  2  0
-move 11 Pw4 by -2  0
-move 12 Pw4 by -2  0
-move 13 Pn4 by  0 -2
-move 15 Ps4 by  0  2
 wait 200
 
 # Pace 2
-layer  8 actors Ns1  12 -4
-layer 16 actors Ps1  44 -4
+layer  8 actors Ns   12 -6
+layer 16 actors Ps   44 -6
 layer 11
-move  1 Ne1 by  2  0
-move  3 Nw1 by -2  0
-move  5 Nn1 by  0 -2
-move  7 Ns1 by  0  2
-move  9 Pe1 by  2  0
-move 12 Pw1 by -2  0
-move 13 Pn1 by  0 -2
-move 15 Ps1 by  0  2
 wait 200
-move  1 Ne2 by  2  0
-move  3 Nw2 by -2  0
-move  5 Nn2 by  0 -2
-move  7 Ns2 by  0  2
-move  8 Ns2 by  0  2
-move  9 Pe2 by  2  0
-move 12 Pw2 by -2  0
-move 13 Pn2 by  0 -2
-move 15 Ps2 by  0  2
-move 16 Ps2 by  0  2
 wait 200
-move  1 Ne3 by  2  0
-move  3 Nw3 by -2  0
-move  5 Nn3 by  0 -2
-move  7 Ns3 by  0  2
-move  8 Ns3 by  0  2
-move  9 Pe3 by  2  0
-move 12 Pw3 by -2  0
-move 13 Pn3 by  0 -2
-move 15 Ps3 by  0  2
-move 16 Ps3 by  0  2
 wait 200
-move  1 Ne4 by  2  0
-move  3 Nw4 by -2  0
-move  5 Nn4 by  0 -2
-move  7 Ns4 by  0  2
-move  8 Ns4 by  0  2
-move  9 Pe4 by  2  0
-move 12 Pw4 by -2  0
-move 13 Pn4 by  0 -2
-move 15 Ps4 by  0  2
-move 16 Ps4 by  0  2
 wait 200
 
 # Pace 3
-layer  6 actors Nn1  28  36
-layer 14 actors Pn1  60  36
+layer  6 actors Nn   28  38
+layer 14 actors Pn   60  38
 layer  7
 layer 15
-move  1 Ne1 by  2  0
-move  3 Nw1 by -2  0
-move  5 Nn1 by  0 -2
-move  8 Ns1 by  0  2
-move  9 Pe1 by  2  0
-move 12 Pw1 by -2  0
-move 13 Pn1 by  0 -2
-move 16 Ps1 by  0  2
 wait 200
-move  1 Ne2 by  2  0
-move  3 Nw2 by -2  0
-move  5 Nn2 by  0 -2
-move  6 Nn2 by  0 -2
-move  8 Ns2 by  0  2
-move  9 Pe2 by  2  0
-move 12 Pw2 by -2  0
-move 13 Pn2 by  0 -2
-move 14 Pn2 by  0 -2
-move 16 Ps2 by  0  2
 wait 200
-move  1 Ne3 by  2  0
-move  3 Nw3 by -2  0
-move  5 Nn3 by  0 -2
-move  6 Nn3 by  0 -2
-move  8 Ns3 by  0  2
-move  9 Pe3 by  2  0
-move 12 Pw3 by -2  0
-move 13 Pn3 by  0 -2
-move 14 Pn3 by  0 -2
-move 16 Ps3 by  0  2
 wait 200
-move  1 Ne4 by  2  0
-move  3 Nw4 by -2  0
-move  5 Nn4 by  0 -2
-move  6 Nn4 by  0 -2
-move  8 Ns4 by  0  2
-move  9 Pe4 by  2  0
-move 12 Pw4 by -2  0
-move 13 Pn4 by  0 -2
-move 14 Pn4 by  0 -2
-move 16 Ps4 by  0  2
 wait 200
 
 # Pace 4
-layer 10 actors Pe1 -4 12
+layer 10 actors Pe  -6 12
 layer 5
 layer 13
-move  1 Ne1 by  2  0
-move  3 Nw1 by -2  0
-move  6 Nn1 by  0 -2
-move  8 Ns1 by  0  2
-move  9 Pe1 by  2  0
-move 12 Pw1 by -2  0
-move 14 Pn1 by  0 -2
-move 16 Ps1 by  0  2
 wait 200
-move  1 Ne2 by  2  0
-move  3 Nw2 by -2  0
-move  6 Nn2 by  0 -2
-move  8 Ns2 by  0  2
-move  9 Pe2 by  2  0
-move 10 Pe2 by  2  0
-move 12 Pw2 by -2  0
-move 14 Pn2 by  0 -2
-move 16 Ps2 by  0  2
 wait 200
-move  1 Ne3 by  2  0
-move  3 Nw3 by -2  0
-move  6 Nn3 by  0 -2
-move  8 Ns3 by  0  2
-move  9 Pe3 by  2  0
-move 10 Pe3 by  2  0
-move 12 Pw3 by -2  0
-move 14 Pn3 by  0 -2
-move 16 Ps3 by  0  2
 wait 200
-move  1 Ne4 by  2  0
-move  3 Nw4 by -2  0
-move  6 Nn4 by  0 -2
-move  8 Ns4 by  0  2
-move  9 Pe4 by  2  0
-move 10 Pe4 by  2  0
-move 12 Pw4 by -2  0
-move 14 Pn4 by  0 -2
-move 16 Ps4 by  0  2
 wait 200
 
 # Pace 5-8 are the same as Pace 1 except the Nander and Poli going
@@ -236,182 +140,44 @@ layer 14
 layer 16
 
 # Pace 5
-layer  1 actors Pe1   4  12
-layer  3 actors Pw1  36  28
-layer  5 actors Nn1  28  20
-layer  7 actors Ns1  12  20
-layer  9 actors Ne1  36  12
-layer 11 actors Nw1   4  28
-layer 12 actors Nw1  68  28
-layer 13 actors Pn1  60  20
-layer 15 actors Ps1  44  20
+layer  1 actors Pe    2  12
+layer  3 actors Pw   38  28
+layer  5 actors Nn   28  22
+layer  7 actors Ns   12  18
+layer  9 actors Ne   34  12
+layer 11 actors Nw    6  28
+layer 12 actors Nw   70  28
+layer 13 actors Pn   60  22
+layer 15 actors Ps   44  18
 wait 200
-move  1 Pe2 by  2  0
-move  3 Pw2 by -2  0
-move  5 Nn2 by  0 -2
-move  7 Ns2 by  0  2
-move  9 Ne2 by  2  0
-move 11 Nw2 by -2  0
-move 12 Nw2 by -2  0
-move 13 Pn2 by  0 -2
-move 15 Ps2 by  0  2
 wait 200
-move  1 Pe3 by  2  0
-move  3 Pw3 by -2  0
-move  5 Nn3 by  0 -2
-move  7 Ns3 by  0  2
-move  9 Ne3 by  2  0
-move 11 Nw3 by -2  0
-move 12 Nw3 by -2  0
-move 13 Pn3 by  0 -2
-move 15 Ps3 by  0  2
 wait 200
-move  1 Pe4 by  2  0
-move  3 Pw4 by -2  0
-move  5 Nn4 by  0 -2
-move  7 Ns4 by  0  2
-move  9 Ne4 by  2  0
-move 11 Nw4 by -2  0
-move 12 Nw4 by -2  0
-move 13 Pn4 by  0 -2
-move 15 Ps4 by  0  2
 wait 200
 
 # Pace 6
-layer  8 actors Ns1  12 -4
-layer 16 actors Ps1  44 -4
+layer  8 actors Ns   12 -6
+layer 16 actors Ps   44 -6
 layer 11
-move  1 Pe1 by  2  0
-move  3 Pw1 by -2  0
-move  5 Nn1 by  0 -2
-move  7 Ns1 by  0  2
-move  9 Ne1 by  2  0
-move 12 Nw1 by -2  0
-move 13 Pn1 by  0 -2
-move 15 Ps1 by  0  2
 wait 200
-move  1 Pe2 by  2  0
-move  3 Pw2 by -2  0
-move  5 Nn2 by  0 -2
-move  7 Ns2 by  0  2
-move  8 Ns2 by  0  2
-move  9 Ne2 by  2  0
-move 12 Nw2 by -2  0
-move 13 Pn2 by  0 -2
-move 15 Ps2 by  0  2
-move 16 Ps2 by  0  2
 wait 200
-move  1 Pe3 by  2  0
-move  3 Pw3 by -2  0
-move  5 Nn3 by  0 -2
-move  7 Ns3 by  0  2
-move  8 Ns3 by  0  2
-move  9 Ne3 by  2  0
-move 12 Nw3 by -2  0
-move 13 Pn3 by  0 -2
-move 15 Ps3 by  0  2
-move 16 Ps3 by  0  2
 wait 200
-move  1 Pe4 by  2  0
-move  3 Pw4 by -2  0
-move  5 Nn4 by  0 -2
-move  7 Ns4 by  0  2
-move  8 Ns4 by  0  2
-move  9 Ne4 by  2  0
-move 12 Nw4 by -2  0
-move 13 Pn4 by  0 -2
-move 15 Ps4 by  0  2
-move 16 Ps4 by  0  2
 wait 200
 
 # Pace 7
-layer  6 actors Nn1  28  36
-layer 14 actors Pn1  60  36
+layer  6 actors Nn   28  38
+layer 14 actors Pn   60  38
 layer  7
 layer 15
-move  1 Pe1 by  2  0
-move  3 Pw1 by -2  0
-move  5 Nn1 by  0 -2
-move  8 Ns1 by  0  2
-move  9 Ne1 by  2  0
-move 12 Nw1 by -2  0
-move 13 Pn1 by  0 -2
-move 16 Ps1 by  0  2
 wait 200
-move  1 Pe2 by  2  0
-move  3 Pw2 by -2  0
-move  5 Nn2 by  0 -2
-move  6 Nn2 by  0 -2
-move  8 Ns2 by  0  2
-move  9 Ne2 by  2  0
-move 12 Nw2 by -2  0
-move 13 Pn2 by  0 -2
-move 14 Pn2 by  0 -2
-move 16 Ps2 by  0  2
 wait 200
-move  1 Pe3 by  2  0
-move  3 Pw3 by -2  0
-move  5 Nn3 by  0 -2
-move  6 Nn3 by  0 -2
-move  8 Ns3 by  0  2
-move  9 Ne3 by  2  0
-move 12 Nw3 by -2  0
-move 13 Pn3 by  0 -2
-move 14 Pn3 by  0 -2
-move 16 Ps3 by  0  2
 wait 200
-move  1 Pe4 by  2  0
-move  3 Pw4 by -2  0
-move  5 Nn4 by  0 -2
-move  6 Nn4 by  0 -2
-move  8 Ns4 by  0  2
-move  9 Ne4 by  2  0
-move 12 Nw4 by -2  0
-move 13 Pn4 by  0 -2
-move 14 Pn4 by  0 -2
-move 16 Ps4 by  0  2
 wait 200
 
 # Pace 8
-layer 10 actors Ne1 -4 12
+layer 10 actors Ne -6 12
 layer 5
 layer 13
-move  1 Pe1 by  2  0
-move  3 Pw1 by -2  0
-move  6 Nn1 by  0 -2
-move  8 Ns1 by  0  2
-move  9 Ne1 by  2  0
-move 12 Nw1 by -2  0
-move 14 Pn1 by  0 -2
-move 16 Ps1 by  0  2
 wait 200
-move  1 Pe2 by  2  0
-move  3 Pw2 by -2  0
-move  6 Nn2 by  0 -2
-move  8 Ns2 by  0  2
-move  9 Ne2 by  2  0
-move 10 Ne2 by  2  0
-move 12 Nw2 by -2  0
-move 14 Pn2 by  0 -2
-move 16 Ps2 by  0  2
 wait 200
-move  1 Pe3 by  2  0
-move  3 Pw3 by -2  0
-move  6 Nn3 by  0 -2
-move  8 Ns3 by  0  2
-move  9 Ne3 by  2  0
-move 10 Ne3 by  2  0
-move 12 Nw3 by -2  0
-move 14 Pn3 by  0 -2
-move 16 Ps3 by  0  2
 wait 200
-move  1 Pe4 by  2  0
-move  3 Pw4 by -2  0
-move  6 Nn4 by  0 -2
-move  8 Ns4 by  0  2
-move  9 Ne4 by  2  0
-move 10 Ne4 by  2  0
-move 12 Nw4 by -2  0
-move 14 Pn4 by  0 -2
-move 16 Ps4 by  0  2
 wait 200
