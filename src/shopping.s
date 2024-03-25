@@ -11,7 +11,9 @@
 .include "global.inc"
 .include "mbyt.inc"
 
-FURNISH_PHASE_DURATION = 30
+; compo version had 30 seconds
+; 2024 suite version is being tuned
+FURNISH_PHASE_DURATION = 45
 
 .export shopitems
 

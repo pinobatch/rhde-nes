@@ -35,18 +35,20 @@ player_cur_unit = cur_piece_lo
 player_state = cur_piece_hi
 last_frame_keys = next_piece
 
-COMBAT_PHASE_DURATION = 50
+; compo version had 50 seconds which was barely enough for 1 1/2 laps
+; 2024 suite version is being tuned
+COMBAT_PHASE_DURATION = 75
 
 ; 0: You keep furni that you pick up; possession is 90% of law
 ; 1: Return picked up item to owner if you don't return to your base
 ; in time
+; compo version had 0
 RETURN_FURNI_TO_OWNER = 0
 
 UNIT_STATE_STAND     = $00
 UNIT_STATE_WALK      = $01
 UNIT_STATE_SWING_BAT = $04
 UNIT_STATE_STUNNED   = $06
-
 
 .segment "CODE"
 .proc battle_phase

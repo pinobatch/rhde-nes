@@ -25,10 +25,19 @@ INCLUDE_DUMP_WALL = 1
 .align 128
 fielddata:  .res FIELD_HT * 32
 floodscratch:
+; walldata_l and walldata_r represent the area already known
+; not to be the interior.  They are initialized with 1 for floor
+; and 0 for wall.
 walldata_l: .res FIELD_HT
 walldata_r: .res FIELD_HT
+; seeddata_l and seeddata_r represent the area to check for interior
+; on the next iteration. They are initialized with the area from the
+; border to the walls.  Each iteration, the seed is added to the
+; known exterior (walldata), and then the known exterior is removed
+; from the seed.
 seeddata_l: .res FIELD_HT
 seeddata_r: .res FIELD_HT
+
 xmax_1p: .res ROAD_HT
 xmin_2p: .res ROAD_HT
 
@@ -43,14 +52,18 @@ unused_seedwt_hi: .res 1
 
 ;;
 ; Converts one player's side of the field to a 1-bit bitmap of
-; wall vs. not wall.
+; wall vs. not wall, where 0 means a wall and 1 means anything else.
+; An overhead-view (build phase) door is considered a wall, and a
+; connected door is treated based on the parameter in CF.
 ; ~14500 cycles
 ; @param X player (0: left; 1: right)
-; @param C 0: treat connected doors as walls; 1: as walkable
+; @param CF 0: treat connected doors as walls (for enclosure);
+;   1: treat connected doors as walkable (for lighting)
+; @return walldata_l, walldata_r: maps of what areas aren't walls
 .proc field_to_walldata
 pf = fieldlo
 pfhi = fieldhi
-wall_tile_count = $02
+wall_tile_count = $02  ; Number of distinct CONNBLKS that count as walls
 player = $04
 rownum = $05
 xmin = $06
@@ -59,16 +72,16 @@ xmax = $07
 
   lda #18
   bcc :+
-  lda #16
-:
+    lda #16
+  :
   sta wall_tile_count
 
   lda #>fielddata
   sta pfhi
   txa
   beq :+
-  lda #14
-:
+    lda #14
+  :
   sta pf
   ldx #0
   
@@ -138,9 +151,12 @@ have_carry:
 ; Calculates an initial seed covering the area from the left and
 ; right sides of each row to the nearest wall.
 ; ~3600 cycles
+; @param walldata_l, walldata_r bitmap of area not covered by walls
+; @return seeddata_l, seeddata_r bitmap of area to search
 .proc seed_sides
-tmp1L = 0
-tmp1R = 1
+tmp1L = $00
+tmp1R = $01
+  ; Start with the top and bottom rows as seeds
   lda #$FF
   sta seeddata_l+0
   sta seeddata_r+0
@@ -148,93 +164,102 @@ tmp1R = 1
   sta seeddata_r+FIELD_HT-1
   ldy #FIELD_HT-2
 loop:
+  ; Find the left side of the wall row
   lda walldata_l,y
   cmp #$FF
-  beq left_seed_is_full
-  ; There's something in the left half.  This means the right half
-  ; of the seed will be 0, and zeroes in the left half will be
-  ; smeared right by 7.
-  sec
-  ror a
-  and walldata_l,y
-  sta tmp1L
-  ror a
-  ror a
-  ora #$C0
-  and tmp1L
-  sta tmp1L
-  ror a
-  ror a
-  ror a
-  ror a
-  ora #$F0
-  and tmp1L
-  ora #$80
-  sta seeddata_l,y
-  lda #$01
-  bne have_left_seed_R
-left_seed_is_full:
-  sta seeddata_l,y
-  lda walldata_r,y
-  sec
-  ror a
-  and walldata_r,y
-  sta tmp1R
-  ror a
-  ror a
-  ora #$C0
-  and tmp1R
-  sta tmp1R
-  ror a
-  ror a
-  ror a
-  ror a
-  ora #$F0
-  and tmp1R
-  ora #$01
-have_left_seed_R:
+  beq left_half_no_walls
+    ; The left half of the row contains at least one zero bit,
+    ; representing a wall.  Smear any zero to less significant bits.
+    ; Widen left walls to 2 wide:
+    ; tmp1L = walldata_l[y] & ((walldata_l[y] >> 1) | 0x80)
+    sec
+    ror a
+    and walldata_l,y
+    sta tmp1L
+    ; Widen left walls to 4 wide:
+    ; tmp1L &= ((tmp1L >> 2) | 0xC0)
+    ror a
+    ror a
+    ora #$C0
+    and tmp1L
+    sta tmp1L
+    ; Widen left walls to 8 wide:
+    ; tmp1L &= ((tmp1L >> 4) | 0xF0)
+    ror a
+    ror a
+    ror a
+    ror a
+    ora #$F0
+    and tmp1L
+    ; And force the left and right columns on
+    ora #$80
+    sta seeddata_l,y
+    lda #$01
+    bne have_left_seed_R
+  left_half_no_walls:
+    ; There are no walls in the left side.
+    ; Smear walls in the right half instead.
+    sta seeddata_l,y
+    lda walldata_r,y
+    sec
+    ror a
+    and walldata_r,y
+    sta tmp1R
+    ror a
+    ror a
+    ora #$C0
+    and tmp1R
+    sta tmp1R
+    ror a
+    ror a
+    ror a
+    ror a
+    ora #$F0
+    and tmp1R
+    ora #$01
+  have_left_seed_R:
   sta seeddata_r,y
-  
+
   ; If the far right bit of walldata is on (no wall), then
   ; flood in from the right too.
   lda walldata_r,y
   lsr a
   bcc no_right_seed
 
-  ; -x & (x + 1) finds the rightmost bit that forms a transition
-  ; (0 to 1 or back)
-  ; sec  ; carry set by previous BCC
-  lda #0
-  sbc walldata_r,y
-  sta tmp1R
-  lda #0
-  sbc walldata_l,y
-  sta tmp1L
+    ; -x & (x + 1) finds the rightmost bit that forms a transition
+    ; (0 to 1 or back)
+    ; sec  ; carry set by previous BCC
+    lda #0
+    sbc walldata_r,y
+    sta tmp1R
+    lda #0
+    sbc walldata_l,y
+    sta tmp1L
   
-  clc
-  lda walldata_r,y
-  adc #1
-  and tmp1R
-  sta tmp1R
-  lda walldata_l,y
-  adc #0
-  and tmp1L
-  sta tmp1L
+    clc
+    lda walldata_r,y
+    adc #1
+    and tmp1R
+    sta tmp1R
+    lda walldata_l,y
+    adc #0
+    and tmp1L
+    sta tmp1L
   
-  ; now subtract 1 to set all bits to the right of the chosen bit
-  ; and combine with the left seed
-  lda tmp1R
-  bne :+
-  dec tmp1L
-:
-  dec tmp1R
-  lda tmp1R
-  ora seeddata_r,y
-  sta seeddata_r,y
-  lda tmp1L
-  ora seeddata_l,y
-  sta seeddata_l,y
-no_right_seed:
+    ; now subtract 1 to set all bits to the right of the chosen bit
+    ; and combine with the left seed
+    lda tmp1R
+    bne :+
+      dec tmp1L
+    :
+    dec tmp1R
+    lda tmp1R
+    ora seeddata_r,y
+    sta seeddata_r,y
+    lda tmp1L
+    ora seeddata_l,y
+    sta seeddata_l,y
+  no_right_seed:
   dey
   beq done
   jmp loop
@@ -271,7 +296,10 @@ loop:
 .endproc
 
 ;;
-; Copies the remaining enclosed area and its 8-neighborhood to seed.
+; Copies the remaining enclosed area and its 8-neighborhood to seed
+; and extends to its 8-neighborhood by one.  Given the interior of
+; the building, this calculates the interior plus those walls that
+; make it the interior.
 ; ~3600 cycles
 .proc surround_floor
   ; First copy walldata to seeddata, then extend the seed once
@@ -336,8 +364,10 @@ extend_prev_row_loop:
 .endproc
 
 ;;
-; Converts grass to walls where seeddata is true.
+; Converts grass to floor where seeddata is true.  Use during
+; build phase after surround_floor to mark floor and adjacent walls.
 ; ~13500 cycles
+; @return X: leftmost dirty tile; Y: rightmost dirty tile
 .proc seeddata_to_field_floor
 pf = fieldlo
 pfhi = fieldhi
@@ -359,41 +389,42 @@ rownum = $05
   stx maxdirty
 rowloop:
   ldy #15
-tileloop:
-  lsr seeddata_l,x
-  ror seeddata_r,x
-  bcc not_enclosed
-  lda (pf),y
-  cmp #TILE_OV_STRAY_BLOCK
-  bne not_stray
-  lda #TILE_OV_BLOCK
-  bne have_new_tile
-  bcs not_enclosed
-not_stray:
-  and #%11111100
-  cmp #$04
-  bne not_enclosed
-  lda #TILE_FLOOR
-have_new_tile:
-  sta (pf),y
-  cpy mindirty
-  bcs :+
-  sty mindirty
-:
-  cpy maxdirty
-  bcc :+
-  sty maxdirty
-:
-not_enclosed:
-  dey
-  bpl tileloop
+  tileloop:
+    lsr seeddata_l,x
+    ror seeddata_r,x
+    bcc not_enclosed
+    lda (pf),y
+    cmp #TILE_OV_STRAY_BLOCK
+    bne not_stray
+      ; An overhead wallcovered by the interior
+      lda #TILE_OV_BLOCK
+      bne have_new_wall_tile
+    not_stray:
+      ; Floor is tiles 0-3
+      and #<~TILE_GRASS_MASK
+      cmp #TILE_GRASS
+      bne not_enclosed
+      lda #TILE_FLOOR
+    have_new_wall_tile:
+      sta (pf),y
+      cpy mindirty
+      bcs :+
+        sty mindirty
+      :
+      cpy maxdirty
+      bcc :+
+        sty maxdirty
+      :
+    not_enclosed:
+    dey
+    bpl tileloop
   lda pf
   clc
   adc #32
   sta pf
   bcc :+
-  inc pfhi
-:
+    inc pfhi
+  :
   inx
   cpx #FIELD_HT
   bcc rowloop
@@ -412,13 +443,13 @@ not_enclosed:
 
 ; 1: Does not have at least one neighbor
 ; 0: Has at least one neighbor
-one_nbr_l = 0
-one_nbr_r = 1
+one_nbr_l = $00
+one_nbr_r = $01
 
 ; 1: Does not have at least two neighbors
 ; 0: Has at least two neighbors
-two_nbrs_l = 2
-two_nbrs_r = 3
+two_nbrs_l = $02
+two_nbrs_r = $03
 
   ldx #FIELD_HT - 1
 rowloop:
@@ -446,18 +477,16 @@ rowloop:
   
   cpx #0
   beq do_bottom_neighbor
-  lda walldata_l-1,x
-  ldy walldata_r-1,x
-  jsr add_ay_neighbors
-skip_top_neighbor:
-
-  cpx #FIELD_HT - 1
-  bcs skip_bottom_neighbor
-do_bottom_neighbor:
-  lda walldata_l+1,x
-  ldy walldata_r+1,x
-  jsr add_ay_neighbors
-skip_bottom_neighbor:
+    lda walldata_l-1,x
+    ldy walldata_r-1,x
+    jsr add_ay_neighbors
+    cpx #FIELD_HT - 1
+    bcs skip_bottom_neighbor
+  do_bottom_neighbor:
+    lda walldata_l+1,x
+    ldy walldata_r+1,x
+    jsr add_ay_neighbors
+  skip_bottom_neighbor:
 
   lda walldata_l,x
   eor #$FF
