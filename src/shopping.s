@@ -15,6 +15,10 @@
 ; 2024 suite version is being tuned
 FURNISH_PHASE_DURATION = 45
 
+; number of frames to freeze cursor autorepeat after changing
+; pages of the shop list
+SHOP_PAGE_WRAP_DAS_DELAY = 10
+
 .export shopitems
 
 ; floodscratch, a 4*FIELD_HT = 96 byte scratchpad area, is defined in
@@ -126,6 +130,11 @@ not_shop_view:
 .endproc
 
 .proc shop_move_cursor
+  lda #KEY_UP|KEY_DOWN
+  and das_keys,x
+  sta das_keys,x
+  jsr autorepeat
+
   lda #<~0
   ldy form_buy_timeout,x
   beq :+
@@ -163,6 +172,8 @@ notLeft:
   lda #SFX_TURN_PAGE
   jsr pently_start_sound
   ldx cur_turn
+  lda #SHOP_PAGE_WRAP_DAS_DELAY
+  sta das_timer,x
   lda #DIRTY_FORM
   ora side_dirty,x
   sta side_dirty,x
@@ -205,6 +216,8 @@ isUp:
   lda #SFX_TURN_PAGE
   jsr pently_start_sound
   ldx cur_turn
+  lda #SHOP_PAGE_WRAP_DAS_DELAY
+  sta das_timer,x
   dec form_pagenum,x
   bpl up_nowrap
   lda #(NUM_FURNIS - 1)/4
