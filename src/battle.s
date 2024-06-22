@@ -39,10 +39,10 @@ last_frame_keys = next_piece
 ; 2024 suite version is being tuned
 COMBAT_PHASE_DURATION = 75
 
+; Behavior at end of battle phase
 ; 0: You keep furni that you pick up; possession is 90% of law
-; 1: Return picked up item to owner if you don't return to your base
-; in time
-; compo version had 0
+; 1: Return taken item to owner if you don't reach your base in time
+; NESdev Compo 2014 version had 0
 RETURN_FURNI_TO_OWNER = 0
 
 UNIT_STATE_STAND     = $00
@@ -357,83 +357,42 @@ control_unit_x_moveq:
   lda new_keys,y
   lsr a
   bcc notRight
-  inc xdist
-  bmi okRight
-  lda xdist
-  cmp #8
-  bcs undoRight
-  adc 0
-  cmp #29
-  bcc okRight
-undoRight:
-  dec 4
-okRight:
-  ldy #$00
-  jmp have_pressed_dir
-notRight:
+    inc xdist
+    ldy #$00
+    bpl have_pressed_dir
+  notRight:
 
   lsr a
   bcc notLeft
-  dec xdist
-  bpl okLeft
-  lda xdist
-  cmp #<-7
-  bcc undoLeft
-  clc
-  adc 0
-  bmi undoLeft
-  bne okLeft
-undoLeft:
-  inc xdist
-okLeft:
-  ldy #$20
-  jmp have_pressed_dir
-notLeft:
+    dec xdist
+    ldy #$20
+    bpl have_pressed_dir
+  notLeft:
 
   lsr a
   bcc notDown
-  inc ydist
-  bmi okDown
-  lda ydist
-  cmp #8
-  bcs undoDown
-  adc 1
-  cmp #FIELD_HT
-  bcc okDown
-undoDown:
-  dec 5
-okDown:
-  ldy #$10
-  jmp have_pressed_dir
-notDown:
+    inc ydist
+    ldy #$10
+    jmp have_pressed_dir
+  notDown:
 
   lsr a
   bcc notUp
-  dec ydist
-  bpl okUp
-  lda ydist
-  cmp #<-7
-  bcc undoUp
-  clc
-  adc 1
-  bpl okUp
-undoUp:
-  inc ydist
-okUp:
-  ldy #$30
+    dec ydist
+    ldy #$30
+  have_pressed_dir:
 
   ; If unit X is stopped, and moveq was empty before this press,
   ; face direction Y
-have_pressed_dir:
   lda unit_move_vector,x
   bne no_turn_before_pack
   lda unit_state,x
   and #UNIT_STATE_FRAME
   bne no_turn_before_pack
-  tya
-  sta unit_state,x
-no_turn_before_pack:
-  jmp pack_moveq
+    tya
+    sta unit_state,x
+  no_turn_before_pack:
+  jmp unit_set_move_vector_if_passable
 notUp:
 
   ; B+A or Select: Switch units
@@ -698,6 +657,8 @@ no_dropoff:
   jsr decide_moveq_direction
   tya
   bpl autowalk_proceed
+  ; If the overly simplistic approach to pathfinding ends up
+  ; stuck in a corner, clear movement vector
   lda #0
   sta unit_move_vector,x
   rts
@@ -719,7 +680,7 @@ autowalk_proceed:
   sec
   sbc direction_ystep,y
   sta 5
-  jsr pack_moveq
+  jsr unit_set_move_vector
   jmp take_one_step
 not_stand:
 
@@ -1102,7 +1063,7 @@ lsr_masks:
 ; @param X player or unit number
 ; @param 0 X tile
 ; @param 1 Y tile position
-; @return A = 0 if passable, 1 if not, 2 if wrong team; Z flag is valid
+; @return A = 0 if passable, 1 if not, 2 if wrong team; ZF reflects A
 .proc is_tile_passable_team_x
 xtile = 0
 ytile = 1
@@ -1206,9 +1167,56 @@ have_mv_y:
   rts
 .endproc
 
-.proc pack_moveq
-xdist = 4
-ydist = 5
+MOVE_VECTOR_MAX = 7
+
+;;
+; Sets the unit's movement vector if the destination is not solid.
+; @param $0004 horizontal offset
+; @param $0005 vertical offset
+.proc unit_set_move_vector_if_passable
+xdist = $04
+ydist = $05
+step_dst_x = $00
+step_dst_y = $01
+  jsr get_unit_step_dest
+  lda ydist
+  cmp #$100 - MOVE_VECTOR_MAX
+  bcs ydist_in_lr_range
+  cmp #MOVE_VECTOR_MAX+1
+  bcs out_of_range
+ydist_in_lr_range:
+  clc
+  adc step_dst_y
+  cmp #FIELD_HT
+  bcs out_of_range
+  sta step_dst_y
+  jsr seek_fielddata_row_a
+
+  lda xdist
+  cmp #$100 - MOVE_VECTOR_MAX
+  bcs xdist_in_lr_range
+  cmp #MOVE_VECTOR_MAX+1
+  bcs out_of_range
+xdist_in_lr_range:
+  clc
+  adc step_dst_x
+  cmp #LEFTMOST_X
+  bcc out_of_range
+  cmp #RIGHTMOST_X + 1
+  bcs out_of_range
+  sta step_dst_x
+
+  tay
+  lda (fieldlo),y
+  jsr is_tile_passable_team_x
+  beq unit_set_move_vector
+out_of_range:
+  sec
+  rts
+.endproc
+.proc unit_set_move_vector
+xdist = $04
+ydist = $05
   lda xdist
   asl a
   asl a
@@ -1451,7 +1459,7 @@ draw_one_cursor:
   beq noplayer
     lda unit_x,x
     clc
-    adc #8
+    adc #FIELDTOP_X
     sta OAM+3,y
     lda unit_y,x
     clc

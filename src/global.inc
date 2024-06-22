@@ -8,8 +8,23 @@
 ; code copies.  This file is offered as-is, without any warranty.
 ;
 .global OAM
+
+; Rows 0 through FIELD_HT-1 are passable
 FIELD_HT = 24
 ROAD_HT = FIELD_HT / 2
+
+; Columns LEFTMOST_X through RIGHTMOST_X are passable.
+; N.B.: These are nametable columns, and sprites are offset by
+; FIELDTOP_[XY] pixels.
+LEFTMOST_X = 1
+RIGHTMOST_X = 28
+
+; Offset in pixels of the top left corner of the portion of the
+; playfield stored in work RAM.  The left and right walls are in
+; work RAM; the top and bottom are not.
+FIELDTOP_X = 8
+FIELDTOP_Y = 20
+
 SHOP_FRAME_WID = 12
 SHOP_FRAME_HT = 7  ; not including last row that overlaps screen border
 
@@ -55,9 +70,6 @@ CONNBLKS_E   = $01
 CONNBLKS_W   = $03
 CONNBLKS_S   = $04
 CONNBLKS_N   = $0C
-
-FIELDTOP_X = 8
-FIELDTOP_Y = 20
 
 ; 1st half walls, 2nd half doors
 TILE_ENCLOSE_BASE = TILE_OV_BLOCK

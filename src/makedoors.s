@@ -109,8 +109,8 @@ notA:
   lsr a
   cmp xmax_1p,y
   bcc :+
-  dec cursor_x+0
-:
+    dec cursor_x+0
+  :
 
   ; Keep 2P on right of road
   lda cursor_y+1
@@ -120,8 +120,8 @@ notA:
   lsr a
   cmp xmin_2p,y
   bcs :+
-  inc cursor_x+1
-:
+    inc cursor_x+1
+  :
   rts
 move_one:
   jsr autorepeat
@@ -132,20 +132,20 @@ move_one:
   lsr a
   bcc notRight
   lda cursor_x,x
-  cmp #28
+  cmp #RIGHTMOST_X-1
   bcs :+
-  inc cursor_x,x
-:
+    inc cursor_x,x
+  :
   rts
 notRight:
 
   lsr a
   bcc notLeft
   lda cursor_x,x
-  cmp #2
+  cmp #LEFTMOST_X+1
   bcc :+
-  dec cursor_x,x
-:
+    dec cursor_x,x
+  :
   rts
 notLeft:
 
@@ -154,8 +154,8 @@ notLeft:
   lda cursor_y,x
   cmp #FIELD_HT-1
   bcs :+
-  inc cursor_y,x
-:
+    inc cursor_y,x
+  :
   rts
 notDown:
 
@@ -163,11 +163,9 @@ notDown:
   bcc notUp
   lda cursor_y,x
   beq :+
-  dec cursor_y,x
-:
-  rts
+    dec cursor_y,x
+  :
 notUp:
-
   rts
 .endproc
 

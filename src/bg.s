@@ -527,11 +527,12 @@ copy_attribute_row:
 ; @return Address of tile row in fieldlo-fieldhi, Y = x coord;
 ; CF=0 if in bounds or 1 if out of bounds
 .proc tile_to_addr
-pt_x = 0
-pt_y = 1
+pt_x = $00
+pt_y = $01
   ldy pt_x
-  beq is_offscreen
-  cpy #29
+  cpy #LEFTMOST_X
+  bcc is_offscreen
+  cpy #RIGHTMOST_X+1
   bcs is_offscreen
   lda pt_y
   cmp #FIELD_HT

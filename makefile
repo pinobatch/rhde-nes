@@ -27,9 +27,9 @@ audio_modules := pentlysound pentlymusic musicseq ntscPeriods
 objlist := $(align_sensitive_modules) $(game_modules) \
   $(lib_modules) $(audio_modules)
 
-AS65 = ca65
-LD65 = ld65
-CFLAGS65 = -DUSE_DAS=1
+CA65 := $(if $(wildcard $(CC65_HOME)/bin/ca65*),$(CC65_HOME)/bin/ca65,ca65)
+LD65 := $(if $(wildcard $(CC65_HOME)/bin/ld65*),$(CC65_HOME)/bin/ld65,ld65)
+CA65FLAGS = -DUSE_DAS=1 -g
 objdir = obj/nes
 srcdir = src
 imgdir = tilesets
@@ -59,7 +59,7 @@ PY := py -3
 else
 DOTEXE:=
 EMU := fceux
-DEBUGEMU :=  ~/.wine/drive_c/Program\ Files\ \(x86\)/FCEUX/fceux.exe
+DEBUGEMU := Mesen
 PY := python3
 endif
 
@@ -102,13 +102,13 @@ $(objdir)/index.txt: makefile
 objlistntsc = $(foreach o,$(objlist),$(objdir)/$(o).o)
 
 map.txt $(title).nes: nrom256.cfg $(objlistntsc)
-	$(LD65) -o $(title).nes -C $^ -m map.txt
+	$(LD65) -o $(title).nes --dbgfile $(title).dbg -m map.txt -C $^
 
 $(objdir)/%.o: $(srcdir)/%.s $(srcdir)/nes.inc $(srcdir)/global.inc $(srcdir)/mbyt.inc
-	$(AS65) $(CFLAGS65) $< -o $@
+	$(CA65) $(CA65FLAGS) $< -o $@
 
 $(objdir)/%.o: $(objdir)/%.s
-	$(AS65) $(CFLAGS65) $< -o $@
+	$(CA65) $(CA65FLAGS) $< -o $@
 
 # Files that depend on .incbin'd files
 $(objdir)/main.o: \

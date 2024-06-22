@@ -8,6 +8,7 @@
 /obj/nes/*.donut
 /obj/nes/*.ov53
 /zip.in
+*.dbg
 rhde.nes
 *.nes.deb
 /map.txt
