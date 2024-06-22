@@ -62,13 +62,14 @@ initloop:
 
 loop:
   jsr read_pads
+  jsr phase_skip_check
   ldx #1
-:
-  stx cur_turn
-  jsr furnish_move_cursor
-  ldx cur_turn
-  dex
-  bpl :-
+  :
+    stx cur_turn
+    jsr furnish_move_cursor
+    ldx cur_turn
+    dex
+    bpl :-
 
   jsr shop_choose_redraw
   ldx #0

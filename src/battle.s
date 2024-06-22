@@ -12,8 +12,11 @@
 
 MAX_UNIT_HP = 3
 BATRADIUS = 2
+PHASE_SKIP_TIME = 60  ; hold B on both controllers this long to skip phase
 
 .segment "ZEROPAGE"
+b_hold_time:     .res 1
+
 unitzp24:
 unit_x:          .res 2 * MAX_UNITS
 unit_y:          .res 2 * MAX_UNITS
@@ -22,8 +25,8 @@ unit_state_time: .res 2 * MAX_UNITS
 unit_hp:         .res 2 * MAX_UNITS
 unit_move_vector:.res 2 * MAX_UNITS  ; XXXXYYYY, each from -7 to 7
 unit_carry_item: .res 2 * MAX_UNITS  ; 7: empty; 6-1: item id; 0: player
-player_cannon_x: .res 2
-player_cannon_y: .res 2
+player_cannon_x: .res 2  ; coords of cannon that current unit faces,
+player_cannon_y: .res 2  ; or <0 if none
 player_particle_x: .res 2
 player_particle_y: .res 2
 
@@ -57,6 +60,9 @@ UNIT_STATE_DIR       = $30
   jsr init_cannons
   jsr init_dropped_furni
   jsr init_breakdoors
+  lda #$FF
+  sta cursor_x+0
+  sta cursor_x+1
 
   ; Reset all units
   lda #$01
@@ -70,22 +76,22 @@ UNIT_STATE_DIR       = $30
   lda #COMBAT_PHASE_DURATION
   sta phase_seconds
   ldx #2 * MAX_UNITS - 1
-unitloop:
-  lda #$00
-  sta unit_move_vector,x
-  sta unit_state_time,x
-  lda #MAX_UNIT_HP
-  sta unit_hp,x
-  lda #$FF
-  sta unit_state,x
-  sta unit_carry_item,x
-  dex
-  bpl unitloop
-  jsr count_beds
+  unitloop:
+    lda #$00
+    sta unit_move_vector,x
+    sta unit_state_time,x
+    lda #MAX_UNIT_HP
+    sta unit_hp,x
+    lda #$FF
+    sta unit_state,x
+    sta unit_carry_item,x
+    dex
+    bpl unitloop
 
   ; 2014-06-27: Skip the round if no beds are present
-  lda 0
-  ora 1
+  jsr count_beds
+  lda $00
+  ora $01
   bne mainloop
   rts
 
@@ -110,19 +116,24 @@ mainloop:
   sta last_frame_keys+1
   jsr read_pads
   jsr pently_update
+
+  ; once the timer hits 0, freeze controls and let missiles in
+  ; flight reach their targets
+  jsr phase_skip_check
   lda phase_seconds
   beq no_control
-  ldx #0
-  jsr control_player
-  ldx #1
-  jsr control_player
-no_control:
+    ldx #0
+    jsr control_player
+    ldx #1
+    jsr control_player
+  no_control:
+
   jsr move_one_unit
   lda time_subtenths  ; move missiles on odd frames
   lsr a
   bcs :+
-  jsr move_cannon_missiles
-:
+    jsr move_cannon_missiles
+  :
 
   ; and with everything moved into position, draw everything
   lda #0
@@ -179,6 +190,26 @@ returnloop:
   jmp cleanup_dropped_furni
 .endproc
 
+;;
+; If both players want to proceed to the next phase, have both hold B
+.proc phase_skip_check
+  lda cur_keys+0
+  and cur_keys+1
+  and #KEY_B
+  bne holding
+    ; one player not holding: cancel phase
+    sta b_hold_time
+  nope:
+    rts
+  holding:
+  inc b_hold_time
+  lda b_hold_time
+  cmp #PHASE_SKIP_TIME
+  bcc nope
+  lda #0
+  sta phase_seconds
+  rts
+.endproc
 
 ;;
 ; Counts beds belonging to each player, starting from the center
@@ -253,6 +284,7 @@ notbed:
 .endproc
 
 .proc control_player
+  stx cur_turn
   lda #$FF
   sta player_particle_y,x
   ldy player_state,x
@@ -277,27 +309,30 @@ ydist = 5
 
   jsr furni_in_front_of_unit
   jsr is_unit_by_cannon
-  pha  ; convert unit number back to player number
-  txa
-  and #$01
-  tax
-  pla
+  ldx cur_turn
   sta player_cannon_y,x
   sty player_cannon_x,x
+
+  ; A is start cannon; B+A is tag out
   lda cur_keys,x
-  and #KEY_B
-  bne not_control_cannon
+  asl a
+  bmi not_control_cannon
   tya                   ; A.D7 = 0 for facing, 1 for not
   ora cur_keys,x
   eor #$80              ; A.D7 = 1 for facing and not holding A
   and last_frame_keys,x ; A.D7 = 1 for facing and releasing A
   bpl not_control_cannon
-    ; The player wants to take control of the cannons.  Start the
-    ; cursor at the cannon's position.
-    lda player_cannon_x,x
-    sta cursor_x,x
-    lda player_cannon_y,x
-    sta cursor_y,x
+    ; The player wants to take control of the cannons.
+    ; If the cannons aren't aimed (cursor_x > RIGHTMOST_X),
+    ; move the cursor to the cannon's position.
+    lda cursor_x,x
+    cmp #RIGHTMOST_X+1
+    bcc cannon_cursor_not_set
+      lda player_cannon_x,x
+      sta cursor_x,x
+      lda player_cannon_y,x
+      sta cursor_y,x
+    cannon_cursor_not_set:
     lda #PLAYER_CONTROL_CANNON
     sta player_state,x
     rts
@@ -327,6 +362,7 @@ ydist = 5
   and #UNIT_STATE_DIR
   ora #UNIT_STATE_SWING_BAT
   sta unit_state,x
+notSwitchUnits:
   rts
 not_use_weapon:
 
@@ -352,7 +388,7 @@ control_unit_x_moveq:
   sta das_keys,x
   jsr autorepeat
   pla
-  tax   ; top of stack = unit number, Y = team number
+  tax   ; X = unit number, Y = team number
 
   lda new_keys,y
   lsr a
@@ -400,15 +436,17 @@ notUp:
   and #KEY_B|KEY_A|KEY_SELECT
   beq notSwitchUnits
   and #KEY_SELECT
-  bne yesSwitchUnits
+  bne tag_out
   lda cur_keys,y  ; If Select not pressed, are B and A held?
   cmp #KEY_B|KEY_A
   bcc notSwitchUnits
-
-yesSwitchUnits:
+  ; fall through to tag_out
+.endproc
+.proc tag_out
 
   ; Require buttons to be pressed again before releases are
   ; recognized.
+  ldy cur_turn
   lda #0
   sta new_keys,y
   sta last_frame_keys,y
@@ -418,31 +456,48 @@ yesSwitchUnits:
 player_y_cur_unit = 2
   stx player_y_cur_unit
 
-  ; Now try finding the next unit.
-switchLoop:
-  inx
-  inx
-  cpx #2 * MAX_UNITS
-  bcc switchNotWrapEnd
-  txa
-  and #$01
-  tax
-switchNotWrapEnd:
-  cpx player_y_cur_unit
-  beq notSwitchUnits
-  lda unit_state,x
-  bmi switchLoop
-  and #$0F
-  cmp #UNIT_STATE_STUNNED
-  beq switchLoop
-  txa
+  ; Find a unit to switch to, the next in rotation that exists
+  ; and is not stunned
+  find_next_unit:
+    inx
+    inx
+    cpx #2 * MAX_UNITS
+    bcc switchNotWrapEnd
+      txa
+      and #$01
+      tax
+    switchNotWrapEnd:
+    cpx player_y_cur_unit
+    beq notSwitchUnits
+    lda unit_state,x
+    bmi find_next_unit
+    and #$0F
+    cmp #UNIT_STATE_STUNNED
+    beq find_next_unit
+  txa  ; XXX: Redundant check?
   cmp player_cur_unit,y
-  beq notSwitchUnits
+  bne haveNewUnit
+  notSwitchUnits:
+    rts
+  haveNewUnit:
   sta player_cur_unit,y
+  lda #0
+  sta player_state
+
+  ; If this unit is a cannon, and the cannon has been turned on
+  ; for the first time, log in!
+  lda cursor_x,y
+  bmi notEnterCannon
+  tya
+  tax
+  jsr furni_in_front_of_unit
+  jsr is_unit_by_cannon
+  bmi notEnterCannon
+    lda #PLAYER_CONTROL_CANNON
+    sta player_state,x
+  notEnterCannon:
   lda #SFX_TURN_PAGE
   jmp pently_start_sound
-notSwitchUnits:
-  rts
 .endproc
 
 ;;
@@ -1366,7 +1421,8 @@ have_furni_id:
 ; is facing.
 ; @param X the unit to test
 ;        facing_furni_*: set by furni_in_front_of_unit
-; @return Y: x tile (or >=128 if none); A, fieldlo: y tile
+; @return Y: x tile (or >=128 if none); A, fieldlo: y tile;
+; NF true if nonexistent
 .proc is_unit_by_cannon
   lda unit_carry_item,x  ; Cannot operate cannon while holding item
   bpl nope1

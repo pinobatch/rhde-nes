@@ -24,7 +24,9 @@
 OAM = $0200
 
 ; debug/release behavior switches
-.if 0
+RELEASE = 1
+
+.if RELEASE = 0
   SHOW_RENT_RESULT = 0
   SHOW_RACESEL = 0
   INITIAL_CASH = 500

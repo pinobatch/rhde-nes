@@ -38,8 +38,6 @@ unit_missile_y:     .res 2 * MAX_UNITS
 unit_missile_dir:   .res 2 * MAX_UNITS  ; in turn-fractions
 unit_missile_subpx: .res 2 * MAX_UNITS  ; XXXXYYYY
 
-player_state = cur_piece_hi
-
 .segment "CODE"
 .proc init_cannons
 
@@ -208,13 +206,16 @@ pt_y = 1
 .endproc
 
 .proc control_cannon
-  lda new_keys,x
+  lda cur_keys,x  ; Press and release B to leave cannon
+  eor #$FF
+  and last_frame_keys,x
   and #KEY_B
-  beq notB
-  lda #0
-  sta player_state,x
-  rts
-notB:
+  beq not_leave_cannon
+    lda #0
+    sta player_state,x
+    rts
+  not_leave_cannon:
+
   lda #KEY_UP|KEY_DOWN|KEY_LEFT|KEY_RIGHT
   and das_keys,x
   sta das_keys,x
@@ -260,25 +261,31 @@ notUp:
   bcc have_cannon
   lda #$FF
   sta player_cannon_x,x
+not_A:
   rts
 have_cannon:
 
   ; at this point Y is a cannon ID
   jsr get_cannon_y_pos
   sty player_cannon_x,x
-  lda 1
+  lda $01
   sta player_cannon_y,x
 
   lda new_keys,x
-  bmi fire_cannon_missile
-  rts
+  bpl not_A
+    ; A alone: Fire a missile
+    lda cur_keys,x
+    asl a  ; B in bit 7
+    bpl fire_cannon_missile
+    ; B+A: Tag out
+    jmp tag_out
+
 .endproc
 
 ;;
 ; Fires a missile from player_cannon_x/y to cursor_x/y.
 .proc fire_cannon_missile
   ; Check if still facing a cannon (it might have been destroyed)
-  ; TO DO
   jsr furni_in_front_of_unit
   jsr is_unit_by_cannon
   txa
@@ -286,11 +293,11 @@ have_cannon:
   tax
   cpy #30  ; still on screen?
   bcc still_by_cannon
-  lda #0
-  sta player_state,x
-nope:
-  rts
-still_by_cannon:
+    lda #0
+    sta player_state,x
+  nope:
+    rts
+  still_by_cannon:
 
 cannon_idx = $05
 

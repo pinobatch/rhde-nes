@@ -206,13 +206,17 @@ PASSABILITY_YES = 0
 PASSABILITY_NO = 1
 PASSABILITY_TEAM = 2
 .globalzp unitzp24
-.global battle_phase, is_tile_passable
+.global battle_phase, is_tile_passable, tag_out
 .global furni_in_front_of_unit, is_unit_by_cannon
-.globalzp player_cannon_x, player_cannon_y
+.globalzp player_cannon_x, player_cannon_y, b_hold_time
+.global phase_skip_check
 
+MAX_UNITS = 3
+
+; player_state values
+.globalzp player_state, last_frame_keys
 PLAYER_CONTROL_UNIT = 0
 PLAYER_CONTROL_CANNON = 2
-MAX_UNITS = 3
 
 ; missiles.s
 .global init_cannons, control_cannon, cannon_cooldown

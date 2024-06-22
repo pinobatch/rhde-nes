@@ -462,6 +462,7 @@ write_loop:
   lda #18
   sta copy_region_width
   ldx #0
+  stx b_hold_time
   jmp ppu_clear_oam
 .endproc
 
