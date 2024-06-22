@@ -501,7 +501,7 @@ copy_attribute_row:
 
 ;;
 ; Loads fieldlo and fieldhi with the start address of row Y
-; and clears C.
+; and clears CF.
 .proc seek_fielddata_row_y
   tya
 .endproc
@@ -525,7 +525,7 @@ copy_attribute_row:
 ; gets the address of a tile point if so.
 ; @param 0,1 X,Y coordinates in tiles
 ; @return Address of tile row in fieldlo-fieldhi, Y = x coord;
-; carry set if out of bounds
+; CF=0 if in bounds or 1 if out of bounds
 .proc tile_to_addr
 pt_x = 0
 pt_y = 1

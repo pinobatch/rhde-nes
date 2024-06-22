@@ -707,6 +707,11 @@ nope:
   rts
 .endproc
 
+;;
+; Destroys a target tile and the four tiles around it
+; @param Y column
+; @param fieldlo pointer to start of row
+; @param $0001 row number
 .proc explode_missile
   ; Destroy this tile
   lda #TILE_RUBBLE
@@ -747,6 +752,8 @@ no_s_splash:
   lda #SFX_EXPLODE
   jmp pently_start_sound
 
+;;
+; Turns a cell vulnerable to splash damage into rubble
 check_splash_here:
   lda (fieldlo),y
   cmp #TILE_FENCE
@@ -756,33 +763,37 @@ check_splash_here:
   beq is_splashable
   cmp #CONNBLKS_DOORWE
   bne not_splashable
-is_splashable:
-  lda #TILE_RUBBLE
-  sta (fieldlo),y
-not_splashable:
+  is_splashable:
+    lda #TILE_RUBBLE
+    sta (fieldlo),y
+  not_splashable:
   rts
 .endproc
 
 ; PRESENTATION ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;
+; Draws the cannon cursor for player X.  If the player has a
+; cannon target position, draws three dots along the path from
+; the target to the cursor.
+; @param X player whose player_cannon_x and player_cannon_y to use
 .proc draw_cannon_cursor
-y1 = OAM+4
-x1 = OAM+7
-y2 = OAM+8
-x2 = OAM+11
-y3 = OAM+12
-x3 = OAM+15
-yend = OAM+0
+yend = OAM+0  ; returned from draw_player_x_cursor
 xend = OAM+3
+y1 = OAM+4    ; temporary cannon location, then position of
+x1 = OAM+7    ; dot at 1/4 distance
+y2 = OAM+8    ; position of dot at 1/2 distance
+x2 = OAM+11
+y3 = OAM+12   ; position of dot at 3/4 distance
+x3 = OAM+15
 
   lda #TILE_PIECE_CURSOR
-  ; Previous call places places cursor coords in yend,y and xend,y
-  jsr draw_player_x_cursor
-  
+  jsr draw_player_x_cursor  ; places cursor coords in yend,y and xend,y
+  lda player_cannon_x,x
+  bmi skip_dots             ; skip if there is no cannon target
+
   ; Calculate actual cannon location (will not be displayed;
   ; 1/4 dot replaces it)
-  lda player_cannon_x,x
-  bmi skip_dots
   asl a
   asl a
   asl a
@@ -827,7 +838,7 @@ xend = OAM+3
   sta OAM+5,y
   sta OAM+9,y
   sta OAM+13,y
-  txa
+  txa  ; player color
   sta OAM+6,y
   sta OAM+10,y
   sta OAM+14,y

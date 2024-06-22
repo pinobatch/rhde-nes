@@ -20,7 +20,7 @@ unit_y:          .res 2 * MAX_UNITS
 unit_state:      .res 2 * MAX_UNITS  ; 7: inactive; 5-4: dir; 3-0: frame
 unit_state_time: .res 2 * MAX_UNITS
 unit_hp:         .res 2 * MAX_UNITS
-unit_moveq:      .res 2 * MAX_UNITS  ; XXXXYYYY
+unit_move_vector:.res 2 * MAX_UNITS  ; XXXXYYYY, each from -7 to 7
 unit_carry_item: .res 2 * MAX_UNITS  ; 7: empty; 6-1: item id; 0: player
 player_cannon_x: .res 2
 player_cannon_y: .res 2
@@ -49,6 +49,8 @@ UNIT_STATE_STAND     = $00
 UNIT_STATE_WALK      = $01
 UNIT_STATE_SWING_BAT = $04
 UNIT_STATE_STUNNED   = $06
+UNIT_STATE_FRAME     = $0F
+UNIT_STATE_DIR       = $30
 
 .segment "CODE"
 .proc battle_phase
@@ -70,7 +72,7 @@ UNIT_STATE_STUNNED   = $06
   ldx #2 * MAX_UNITS - 1
 unitloop:
   lda #$00
-  sta unit_moveq,x
+  sta unit_move_vector,x
   sta unit_state_time,x
   lda #MAX_UNIT_HP
   sta unit_hp,x
@@ -290,17 +292,16 @@ ydist = 5
   eor #$80              ; A.D7 = 1 for facing and not holding A
   and last_frame_keys,x ; A.D7 = 1 for facing and releasing A
   bpl not_control_cannon
-
-  ; The player wants to take control of the cannons.  Start the
-  ; cursor at the cannon's position.
-  lda player_cannon_x,x
-  sta cursor_x,x
-  lda player_cannon_y,x
-  sta cursor_y,x
-  lda #PLAYER_CONTROL_CANNON
-  sta player_state,x
-  rts
-not_control_cannon:
+    ; The player wants to take control of the cannons.  Start the
+    ; cursor at the cannon's position.
+    lda player_cannon_x,x
+    sta cursor_x,x
+    lda player_cannon_y,x
+    sta cursor_y,x
+    lda #PLAYER_CONTROL_CANNON
+    sta player_state,x
+    rts
+  not_control_cannon:
 
   ; Release A or B while standing: Do something
   lda cur_keys,x
@@ -313,7 +314,7 @@ not_control_cannon:
   lda player_cur_unit,x
   tax
   lda unit_state,x
-  and $0F
+  and #$0F  ; if not stopped, control moveq
   bne control_unit_x_moveq
   lda unit_carry_item,x
   lsr a
@@ -323,7 +324,7 @@ not_control_cannon:
   lda #2
   sta unit_state_time,x
   lda unit_state,x
-  and #$30
+  and #UNIT_STATE_DIR
   ora #UNIT_STATE_SWING_BAT
   sta unit_state,x
   rts
@@ -338,7 +339,7 @@ not_pickup:
   tax
 control_unit_x_moveq:
   jsr get_unit_step_dest
-  jsr unpack_moveq
+  jsr unit_get_move_vector
   
   ; 2014-03-12: make unit movement autorepeat
   txa
@@ -424,10 +425,10 @@ okUp:
   ; If unit X is stopped, and moveq was empty before this press,
   ; face direction Y
 have_pressed_dir:
-  lda unit_moveq,x
+  lda unit_move_vector,x
   bne no_turn_before_pack
   lda unit_state,x
-  and #$0F
+  and #UNIT_STATE_FRAME
   bne no_turn_before_pack
   tya
   sta unit_state,x
@@ -698,7 +699,7 @@ no_dropoff:
   tya
   bpl autowalk_proceed
   lda #0
-  sta unit_moveq,x
+  sta unit_move_vector,x
   rts
 autowalk_proceed:
   sta unit_state,x
@@ -709,7 +710,7 @@ autowalk_proceed:
   lsr a
   lsr a
   tay  ; Y = direction
-  jsr unpack_moveq
+  jsr unit_get_move_vector
   lda 4
   sec
   sbc direction_xstep,y
@@ -766,7 +767,7 @@ take_one_step:
 
   ; Stop walking
   lda unit_state,x
-  and #$30
+  and #UNIT_STATE_DIR
   .if ::UNIT_STATE_STAND
     ora #UNIT_STATE_STAND
   .endif
@@ -883,7 +884,7 @@ opponentloop:
   ; presence, mercy, and hitbox tests pass: stun the opponent
   inc numhit
   lda unit_state,x
-  and #$30
+  and #UNIT_STATE_DIR
   ora #UNIT_STATE_STUNNED
   sta unit_state,x
   lda #10  ; stun time in 20 ms
@@ -1017,12 +1018,12 @@ noframesleft:
 ; Unpacks the distance that a unit needs to move.
 ; @param X the unit to test
 ; @return 4, 5: move queue distance
-.proc unpack_moveq
-  lda unit_moveq,x
+.proc unit_get_move_vector
+  lda unit_move_vector,x
 .endproc
 .proc unpack_x4y4_signed
-dist_x = 4
-dist_y = 5
+dist_x = $04
+dist_y = $05
   pha
   lsr a
   lsr a
@@ -1130,7 +1131,7 @@ pt_y = 1
 mv_x = 4
 mv_y = 5
   jsr get_unit_step_dest
-  jsr unpack_moveq
+  jsr unit_get_move_vector
   lda mv_x
   beq have_mv_x
   jsr tile_to_addr
@@ -1216,15 +1217,17 @@ ydist = 5
   eor ydist
   and #$F0
   eor ydist
-  sta unit_moveq,x
+  sta unit_move_vector,x
   rts
 .endproc
 
 
 ;;
-; Seeks to the tile in front of the player's active unit.
-; @return carry clear if valid, x = player's active unit,
-; dst_x = x coord, dst_y = y coord, fieldlo = start of row dst_y
+; Seeks to the tile in front of the player's (stopped) active unit.
+; @param X player number (0 or 1)
+; @return CF=0 if valid (unit is stopped and tile is in range);
+; X = ID of active unit; Y = dst_x = x coord; dst_y = y coord;
+; fieldlo = start of row dst_y
 .proc tile_in_front_of_unit
 dst_x = 0
 dst_y = 1
@@ -1232,7 +1235,7 @@ dst_y = 1
   tax
   lda unit_state,x
   and #$0F
-  ora unit_moveq,x
+  ora unit_move_vector,x
   beq is_stopped
   sec
   rts
@@ -1394,52 +1397,51 @@ is_correct_item:
 ; PRESENTATION ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .proc draw_cursors
-  ldy oam_used
   lda nmis
   jsr draw_one_cursor
   lda nmis
   eor #$01
-  jsr draw_one_cursor
-  sty oam_used
-  rts
+
+; Draw cursor for player A&1
 draw_one_cursor:
   and #$01
   tax
   lda player_state,x
   beq player_is_walking
-  sty oam_used
-  jsr draw_cannon_cursor
-  ldy oam_used
-  rts
-player_is_walking:
+    jmp draw_cannon_cursor
+  player_is_walking:
 
-  ; Draw the lock particle
+  ldy oam_used
+  ; If facing a locked door (player_particle_y < 0x80),
+  ; draw the lock
   lda player_particle_y,x
   bmi no_lock_particle
-  asl a
-  asl a
-  asl a
-  clc
-  adc #FIELDTOP_Y - 1
-  sta OAM+0,y
-  lda player_particle_x,x
-  asl a
-  asl a
-  asl a
-  clc
-  adc #FIELDTOP_X - 1
-  sta OAM+3,y
-  txa
-  eor #$01
-  sta OAM+2,y
-  lda #TILE_LOCK_POPUP
-  sta OAM+1,y
-  iny
-  iny
-  iny
-  iny  
-no_lock_particle:
+    asl a
+    asl a
+    asl a
+    clc
+    adc #FIELDTOP_Y - 1
+    sta OAM+0,y
+    lda player_particle_x,x
+    asl a
+    asl a
+    asl a
+    clc
+    adc #FIELDTOP_X - 1
+    sta OAM+3,y
+    txa
+    eor #$01
+    sta OAM+2,y
+    lda #TILE_LOCK_POPUP
+    sta OAM+1,y
+    iny
+    iny
+    iny
+    iny
+  no_lock_particle:
 
+  ; If this unit exists and is not stunned, draw a "player 1" or
+  ; "player 2" arrow marker above the unit
   lda player_cur_unit,x
   tax
   lda unit_state,x    ; Nonexistent unit: don't draw marker
@@ -1447,68 +1449,72 @@ no_lock_particle:
   and #$0F
   cmp #UNIT_STATE_STUNNED  ; Stunned unit: don't draw marker
   beq noplayer
-  lda unit_x,x
-  clc
-  adc #8
-  sta OAM+3,y
-  lda unit_y,x
-  clc
-  adc #FIELDTOP_Y - 1 - 1 - 9
-  sta OAM+0,y
-  txa
-  and #$01
-  sta OAM+2,y
-  ora #TILE_PLAYER_MARKER
-  sta OAM+1,y
-  iny
-  iny
-  iny
-  iny
+    lda unit_x,x
+    clc
+    adc #8
+    sta OAM+3,y
+    lda unit_y,x
+    clc
+    adc #FIELDTOP_Y - 1 - 1 - 9
+    sta OAM+0,y
+    txa
+    and #$01
+    sta OAM+2,y
+    ora #TILE_PLAYER_MARKER
+    sta OAM+1,y
+    iny
+    iny
+    iny
+    iny
 
-  ; If the unit has a moveq, draw the path
-  lda unit_moveq,x
-  beq noplayer
-  sty oam_used
-  jsr get_unit_step_dest
-  jsr unpack_moveq
-  ldy oam_used
-  lda 0
-  sec
-  adc 4
-  asl a
-  asl a
-  asl a
-  sta OAM+3,y
-  adc unit_x,x
-  ror a
-  adc #4
-  sta OAM+7,y  
-  lda 1
-  clc
-  adc 5
-  asl a
-  asl a
-  asl a
-  clc
-  adc #FIELDTOP_Y - 1
-  sta OAM+0,y
-  adc unit_y,x
-  ror a
-  adc #FIELDTOP_Y / 2 - 1
-  sta OAM+4,y
-  lda #TILE_PIECE_CURSOR
-  sta OAM+1,y
-  lda #TILE_PATH_DOT
-  sta OAM+5,y
-  txa
-  and #$01
-  sta OAM+2,y
-  sta OAM+6,y
-  tya
-  clc
-  adc #8
-  tay
-noplayer:
+step_dst_x = $00
+step_dst_y = $01
+dist_x = $04
+dist_y = $05
+    ; If the unit has a movement vector, draw a dot halfway up
+    lda unit_move_vector,x
+    beq noplayer
+    sty oam_used
+    jsr get_unit_step_dest
+    jsr unit_get_move_vector
+    ldy oam_used
+    lda step_dst_x
+    sec
+    adc dist_x
+    asl a
+    asl a
+    asl a
+    sta OAM+3,y
+    adc unit_x,x
+    ror a
+    adc #4
+    sta OAM+7,y
+    lda step_dst_y
+    clc
+    adc dist_y
+    asl a
+    asl a
+    asl a
+    clc
+    adc #FIELDTOP_Y - 1
+    sta OAM+0,y
+    adc unit_y,x
+    ror a
+    adc #FIELDTOP_Y / 2 - 1
+    sta OAM+4,y
+    lda #TILE_PIECE_CURSOR
+    sta OAM+1,y
+    lda #TILE_PATH_DOT
+    sta OAM+5,y
+    txa
+    and #$01
+    sta OAM+2,y
+    sta OAM+6,y
+    tya
+    clc
+    adc #8
+    tay
+  noplayer:
 
   ; Draw the cannon position
   txa
@@ -1516,26 +1522,27 @@ noplayer:
   tax
   lda player_cannon_x,x
   bmi nocannoncursor
-  asl a
-  asl a
-  asl a
-  adc #FIELDTOP_X+4
-  sta OAM+3,y
-  lda player_cannon_y,x
-  asl a
-  asl a
-  asl a
-  adc #FIELDTOP_Y-1+4
-  sta OAM+0,y
-  lda #TILE_A_BUTTON
-  sta OAM+1,y
-  txa
-  sta OAM+2,y
-  iny
-  iny
-  iny
-  iny
-nocannoncursor:
+    asl a
+    asl a
+    asl a
+    adc #FIELDTOP_X+4
+    sta OAM+3,y
+    lda player_cannon_y,x
+    asl a
+    asl a
+    asl a
+    adc #FIELDTOP_Y-1+4
+    sta OAM+0,y
+    lda #TILE_A_BUTTON
+    sta OAM+1,y
+    txa
+    sta OAM+2,y
+    iny
+    iny
+    iny
+    iny
+  nocannoncursor:
+  sty oam_used
   rts
 .endproc
 
@@ -1682,58 +1689,57 @@ skip_unit:
 .endproc
 
 .proc draw_units
-rawdirection = 0
-tilerow = 1
-attrs = 2
+rawdirection = $00
+tilerow      = $01
+attrs        = $02
 
   ldx #2 * MAX_UNITS - 1
-unitloop:
- 
-  lda unit_state,x
-  bmi skip_unit
-  lsr a
-  lsr a
-  lsr a
-  lsr a
-  tay
-  lda direction_tilerow,y
-  sta tilerow
-  lda direction_hflip,y
-  sta attrs
-  txa
-  and #$01
-  tay  ; Y = player number
-  lda player_sprite_origin,y
-  adc tilerow
-  sta tilerow
+  unitloop:
+    lda unit_state,x
+    bmi skip_unit
+    lsr a
+    lsr a
+    lsr a
+    lsr a
+    tay
+    lda direction_tilerow,y
+    sta tilerow
+    lda direction_hflip,y
+    sta attrs
+    txa
+    and #$01
+    tay  ; Y = player number
+    lda player_sprite_origin,y
+    adc tilerow
+    sta tilerow
 
-  ldy oam_used
-  lda unit_x,x
-  clc
-  adc #FIELDTOP_X
-  sta OAM+3,y
-  lda unit_y,x
-  clc
-  adc #FIELDTOP_Y - 1 - 1
-  sta OAM,y
-  lda unit_state,x
-  and #$0F
-  ; XXX: This is where you'd change the translation of states to
-  ; tile numbers.
-  ora tilerow
-  sta OAM+1,y
-  txa
-  and #$01
-  ora attrs
-  sta OAM+2,y
-  iny
-  iny
-  iny
-  iny
-  sty oam_used
-skip_unit:
-  dex
-  bpl unitloop
+    ldy oam_used
+    lda unit_x,x
+    clc
+    adc #FIELDTOP_X
+    sta OAM+3,y
+    lda unit_y,x
+    clc
+    adc #FIELDTOP_Y - 1 - 1
+    sta OAM,y
+    lda unit_state,x
+    and #$0F
+    ; XXX: This is where you'd change the translation of states to
+    ; tile numbers.
+    ora tilerow
+    sta OAM+1,y
+    txa
+    and #$01
+    ora attrs
+    sta OAM+2,y
+    iny
+    iny
+    iny
+    iny
+    sty oam_used
+  skip_unit:
+    dex
+    bpl unitloop
   rts
 .endproc
 
@@ -1741,30 +1747,28 @@ skip_unit:
   ldx #0
   jsr oneplayer
   ldx #1
-oneplayer:
-  ldy player_cur_unit,x
-  lda unit_carry_item,y
-  bmi not_carrying_anything
-  lsr a
-  jsr seek_to_furni_a
-  lda held_furni_x,x
-  sta $04
-  lda #FIELDTOP_Y+192
-  sta $05
-  ldx unit_carry_item,y
-  ldy #SHOPITEMS_SIZE
-  lda (0),y  ; size bits
-  sta $02
-  iny
-  lda (0),y  ; tilenumber
-  sta $03
-  jmp draw_furni_as_sprite
-not_carrying_anything:
+  oneplayer:
+    ldy player_cur_unit,x
+    lda unit_carry_item,y
+    bmi not_carrying_anything
+    lsr a
+    jsr seek_to_furni_a
+    lda held_furni_x,x
+    sta $04
+    lda #FIELDTOP_Y+192
+    sta $05
+    ldx unit_carry_item,y
+    ldy #SHOPITEMS_SIZE
+    lda (0),y  ; size bits
+    sta $02
+    iny
+    lda (0),y  ; tilenumber
+    sta $03
+    jmp draw_furni_as_sprite
+  not_carrying_anything:
   rts
 .pushseg
 .segment "RODATA"
 held_furni_x:  .byte 16, 224
 .popseg
 .endproc
-
-

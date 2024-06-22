@@ -377,15 +377,15 @@ piece_exists:
   cmp #1
   lda #TILE_PATH_DOT
   bcc :+
-  lda #TILE_PIECE_CURSOR
-:
+    lda #TILE_PIECE_CURSOR
+  :
   ; fall through
 .endproc
 ;;
-; Draws a particular at a player's cursor.
+; Draws a tile at a player's cursor (cursor_x, cursor_y).
 ; @param X player (0 or 1)
 ; @param A tile number
-; @return Y OAM location of the cursor
+; @return Y: offset in shadow OAM of the cursor
 .proc draw_player_x_cursor
   ldy oam_used
   sta OAM+1,y  ; set tile
