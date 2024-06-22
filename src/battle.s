@@ -502,6 +502,7 @@ player_y_cur_unit = $02
   jsr furni_in_front_of_unit
   jsr is_unit_by_cannon
   bmi notEnterCannon
+    ldy cur_turn
     lda #PLAYER_CONTROL_CANNON
     sta player_state,y
   notEnterCannon:
@@ -562,6 +563,7 @@ pickup_done:
 .proc pickup_indoor_facing_furni
 itemdata = $00
 itemoffset = $02
+unitnum = $07
 
   ; Make sure unit isn't already carrying something
   ldy player_cur_unit,x
@@ -572,18 +574,18 @@ itemoffset = $02
   jsr query_dropped_furni_unit_y
   bne no_dropped_furni
   jsr take_dropped_furni
-  ldy $07
+  ldy unitnum
   sta unit_carry_item,y
   lda #SFX_TURN
   jsr pently_start_sound
-  ldy $07
+  ldy unitnum
   tya
   and #$01
   tax
   rts
 
 no_dropped_furni:
-  ldy $07
+  ldy unitnum
   tya
   and #$01
   tax
@@ -896,13 +898,11 @@ opponentloop:
   lda unit_x,x
   sec
   sbc xpx
-  sta debughex+0
   cmp #BATRADIUS*2+1
   bcs no_opponent
   lda unit_y,x
   sec
   sbc ypx
-  sta debughex+1
   cmp #BATRADIUS*2+1
   bcs no_opponent
 
