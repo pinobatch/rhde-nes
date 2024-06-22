@@ -15,7 +15,7 @@ BATRADIUS = 2
 PHASE_SKIP_TIME = 60  ; hold B on both controllers this long to skip phase
 
 .segment "ZEROPAGE"
-b_hold_time:     .res 1
+b_hold_time:     .res 2
 
 unitzp24:
 unit_x:          .res 2 * MAX_UNITS
@@ -146,6 +146,7 @@ mainloop:
   jsr draw_unit_weapons
   jsr draw_units
   jsr draw_dropped_furni
+  jsr draw_phase_skip_check
   jsr draw_debughex
   ldx oam_used
   jsr ppu_clear_oam
@@ -193,21 +194,28 @@ returnloop:
 ;;
 ; If both players want to proceed to the next phase, have both hold B
 .proc phase_skip_check
-  lda cur_keys+0
-  and cur_keys+1
-  and #KEY_B
-  bne holding
-    ; one player not holding: cancel phase
-    sta b_hold_time
+  ldx #1
+  countloop:
+    inc b_hold_time,x
+    bne :+
+      dec b_hold_time,x
+    :
+    lda cur_keys,x
+    and #KEY_B
+    bne :+
+      sta b_hold_time,x
+    :
+    dex
+    bpl countloop
+
+  lda #PHASE_SKIP_TIME
+  cmp b_hold_time+0
+  bcs nope
+  cmp b_hold_time+1
+  bcs nope
+    lda #0
+    sta phase_seconds
   nope:
-    rts
-  holding:
-  inc b_hold_time
-  lda b_hold_time
-  cmp #PHASE_SKIP_TIME
-  bcc nope
-  lda #0
-  sta phase_seconds
   rts
 .endproc
 
@@ -453,7 +461,8 @@ notUp:
 
   ; Have to store the value at player_cur_unit,y in a
   ; local variable because you can't CPX a,Y on 6502.
-player_y_cur_unit = 2
+player_y_cur_unit = $02
+  ldx player_cur_unit,y
   stx player_y_cur_unit
 
   ; Find a unit to switch to, the next in rotation that exists
@@ -482,7 +491,7 @@ player_y_cur_unit = 2
   haveNewUnit:
   sta player_cur_unit,y
   lda #0
-  sta player_state
+  sta player_state,y
 
   ; If this unit is a cannon, and the cannon has been turned on
   ; for the first time, log in!
@@ -494,7 +503,7 @@ player_y_cur_unit = 2
   jsr is_unit_by_cannon
   bmi notEnterCannon
     lda #PLAYER_CONTROL_CANNON
-    sta player_state,x
+    sta player_state,y
   notEnterCannon:
   lda #SFX_TURN_PAGE
   jmp pently_start_sound
@@ -1804,6 +1813,45 @@ attrs        = $02
   skip_unit:
     dex
     bpl unitloop
+  rts
+.endproc
+
+;;
+; Draws bouncing B Button symbols for each player holding the
+; B Button to request skipping to the next phase.
+.proc draw_phase_skip_check
+  lda #104
+  ldy b_hold_time+0
+  jsr do_one
+  lda #144
+  ldy b_hold_time+1
+do_one:
+  cpy #PHASE_SKIP_TIME/2
+  bcc dont_draw
+    ldx oam_used
+    sta OAM+3,x
+    asl a
+    lda #0
+    rol a
+    sta OAM+2,x
+    tya
+    and #%00011000
+    cmp #%00011000
+    bcc :+
+      lda #%00001000
+    :
+    lsr a
+    lsr a
+    lsr a
+    adc #FIELDTOP_Y-1+8*FIELD_HT
+    sta OAM+0,x
+    lda #TILE_B_BUTTON
+    sta OAM+1,x
+    txa
+    clc
+    adc #4
+    sta oam_used
+  dont_draw:
   rts
 .endproc
 

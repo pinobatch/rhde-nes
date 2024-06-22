@@ -209,7 +209,7 @@ PASSABILITY_TEAM = 2
 .global battle_phase, is_tile_passable, tag_out
 .global furni_in_front_of_unit, is_unit_by_cannon
 .globalzp player_cannon_x, player_cannon_y, b_hold_time
-.global phase_skip_check
+.global phase_skip_check, draw_phase_skip_check
 
 MAX_UNITS = 3
 

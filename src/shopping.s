@@ -83,6 +83,7 @@ loop:
   ldx cur_turn
   dex
   bpl :-
+  jsr draw_phase_skip_check
   jsr draw_debughex
   ldx oam_used
   jsr ppu_clear_oam

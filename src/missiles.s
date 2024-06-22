@@ -261,7 +261,6 @@ notUp:
   bcc have_cannon
   lda #$FF
   sta player_cannon_x,x
-not_A:
   rts
 have_cannon:
 
@@ -278,8 +277,12 @@ have_cannon:
     asl a  ; B in bit 7
     bpl fire_cannon_missile
     ; B+A: Tag out
+  do_tag_out:
     jmp tag_out
-
+  not_A:
+  and #KEY_SELECT
+  bne do_tag_out
+  rts
 .endproc
 
 ;;
