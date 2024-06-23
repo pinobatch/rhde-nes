@@ -215,6 +215,8 @@ returnloop:
   bcs nope
     lda #0
     sta phase_seconds
+    lda #SFX_CLOSE_ALERT
+    jmp pently_start_sound
   nope:
   rts
 .endproc

@@ -454,7 +454,7 @@ write_loop:
 .endproc
 
 .proc remove_alertbox
-  lda #7
+  lda #SFX_CLOSE_ALERT
   jsr pently_start_sound
   jsr delay_500
   lda #6

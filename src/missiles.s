@@ -248,7 +248,6 @@ notLeft:
   bcc notUp
   dec cursor_y,x
 notDown:
-
   lsr a
   bcc notUp
   dec cursor_y,x
@@ -256,33 +255,42 @@ notDown:
   lda #0
   sta cursor_y,x
 notUp:
+
+  ; is a silo available?
   jsr find_closest_cannon
   cpy #2 * MAX_CANNONS
-  bcc have_cannon
-  lda #$FF
-  sta player_cannon_x,x
-  rts
-have_cannon:
-
-  ; at this point Y is a cannon ID
-  jsr get_cannon_y_pos
+  bcc cannon_exists
+    ldy #$FF
+    bmi have_cannon_x
+  cannon_exists:
+    ; at this point Y is a cannon ID
+    jsr get_cannon_y_pos
+    lda $01
+    sta player_cannon_y,x
+  have_cannon_x:
   sty player_cannon_x,x
-  lda $01
-  sta player_cannon_y,x
 
+  ; A: fire; B+A: tag out; Select: tag out
   lda new_keys,x
   bpl not_A
     ; A alone: Fire a missile
     lda cur_keys,x
     asl a  ; B in bit 7
-    bpl fire_cannon_missile
-    ; B+A: Tag out
-  do_tag_out:
+    bpl want_fire
+  do_tag_out:  ; B+A or Select: Tag out
     jmp tag_out
   not_A:
+  lda new_keys,x
   and #KEY_SELECT
   bne do_tag_out
+nope:
   rts
+
+want_fire:
+  tya
+  bpl fire_cannon_missile
+  lda #SFX_NO_AMMO
+  jmp pently_start_sound
 .endproc
 
 ;;
@@ -789,6 +797,8 @@ check_splash_here:
 ; @param X player whose player_cannon_x and player_cannon_y to use
 .proc draw_cannon_cursor
 yend = OAM+0  ; returned from draw_player_x_cursor
+cursor_tile = OAM+1
+cursor_attr = OAM+2
 xend = OAM+3
 y1 = OAM+4    ; temporary cannon location, then position of
 x1 = OAM+7    ; dot at 1/4 distance
@@ -799,6 +809,15 @@ x3 = OAM+15
 
   lda #TILE_PIECE_CURSOR
   jsr draw_player_x_cursor  ; places cursor coords in yend,y and xend,y
+  lda nmis
+  lsr a
+  bcc :+
+    lda cursor_attr,y
+    ora #$40
+    sta cursor_attr,y
+  :
+  lda #TILE_SILO_CURSOR
+  sta cursor_tile,y
   lda player_cannon_x,x
   bmi skip_dots             ; skip if there is no cannon target
 

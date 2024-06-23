@@ -21,13 +21,11 @@ pently_sfx_table:
   sfxdef hold_piece_snd, 5, 2, 3
   sfxdef shoot_snd,    8, 5, 3
   sfxdef start1_snd,  16, 1, 0
-
   sfxdef explode_snd,  8, 4, 3
   sfxdef scanbeep_snd, 2, 6, 0
   
-  ; discovered on 2014-05-09 that there's a bug in the sfx engine
-  ; that stops a slowed sound effect after the first frame of its
-  ; last step
+  ; 2014-05-09: found bug in Pently 4 sound driver that stops a
+  ; slowed sound effect after the first frame of its last step
   
   sfxdef kick_snd,     3, 1, 3
   sfxdef kick2_snd,    4, 1, 2
