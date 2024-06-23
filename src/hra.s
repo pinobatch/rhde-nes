@@ -78,6 +78,9 @@ NEAR_DOOR      = $04
 cur_furni = cur_piece_lo+0
 cur_furni_size = cur_piece_lo+1
 
+PTS_PER_INDOOR = 7
+PTS_PER_FLOWER = 2
+FULL_GROUP_BONUS = 25
 
 ;;
 ; Rates one house.
@@ -85,127 +88,126 @@ cur_furni_size = cur_piece_lo+1
 ; @return $0E-$0F: rating
 .proc rate_furni
 row_xend = cursor_x+1
+itemdatalo = $00
 ratinglo = $0E
 ratinghi = $0F
 
-  lda #0
-  sta cursor_y
-  sta ratinglo
-  sta ratinghi
-
   ; Clear presence flag for each furni
   ldx #NUM_FURNIS_NONWEAPON-1
-clrpresence:
-  sta form_pageitems,x
-  dex
-  bpl clrpresence
+  clrpresence:
+    sta owned_items,x
+    dex
+    bpl clrpresence
 
-do_row:
+  ; Initialize the rating
+  inx
+  stx cursor_y
+  stx ratinglo
+  stx ratinghi
 
-  ; Establish the boundaries of this side
-  lda cursor_y
-  lsr a
-  tay
-  lda #29
-  ldx enclose_turn
-  bne :+
-  lda xmax_1p,y
-  asl a
-:  
-  sta row_xend
-  lda #1
-  cpx #0
-  beq :+
-  lda xmin_2p,y
-  asl a
-:
-  sta cursor_x
-  ldx #0
-  jsr get_piece_top_left_corner
+  do_row:
+    ; Establish the boundaries of this side
+    lda cursor_y
+    lsr a
+    tay
+    lda #RIGHTMOST_X + 1
+    ldx enclose_turn
+    bne :+
+      lda xmax_1p,y
+      asl a
+    :
+    sta row_xend
+    lda #LEFTMOST_X
+    cpx #0
+    beq :+
+      lda xmin_2p,y
+      asl a
+    :
+    sta cursor_x
+    ldx #0
+    jsr get_piece_top_left_corner
 
-  ; at this point Y is the starting X coordinate
-do_tile:
-  ldy #33
-  lda (fieldlo),y
-  cmp #$52
-  bcs maybe_indoor_furni
-  and #%11111110
-  eor #TILE_FLOWERS
-  bne skip_tile
+    ; at this point Y is the starting X coordinate
+    do_tile:
+      ldy #33
+      lda (fieldlo),y
+      cmp #$52
+      bcs maybe_indoor_furni
+      and #%11111110
+      eor #TILE_FLOWERS
+      bne skip_tile
 
-  ; Flower: Add 2, plus one more if touching a wall
-  ; TO DO: Add one more if touching a wall
-  lda #0
-  sta cur_furni_size
-  jsr find_walls_around_size
-  and #NEAR_WE_WALL|NEAR_NS_WALL
-  cmp #1
-  lda #2 >> 1
-  rol a
-  bne add_points
+      ; Flower: Add 2, plus one more if touching a wall
+      ;lda #0  ; guaranteed after EOR BNE
+      sta cur_furni_size
+      jsr find_walls_around_size
+      and #NEAR_WE_WALL|NEAR_NS_WALL
+      cmp #1
+      lda #0
+      adc #PTS_PER_FLOWER
+      bne add_points
 
-maybe_indoor_furni:
-  jsr find_furni_tile_a
-  bmi skip_tile
-  ora #$00
-  bne skip_tile  ; if not top left corner, fail
-  sty cur_furni
-  ldy #SHOPITEMS_SIZE
-  lda ($00),y
-  sta cur_furni_size
-  and #SHOPITEMS_INDOOR
-  beq skip_tile  ; if not indoor, fail
-  lda cur_furni
-  jsr find_furni_main_rot
-  cmp #NUM_FURNIS_NONWEAPON
-  bcs skip_tile  ; if weapon, fail
-  sta cur_furni
-  jsr get_furni_points
-add_points:
-  clc
-  adc ratinglo
-  sta ratinglo
-  bcc skip_tile
-  inc ratinghi
-skip_tile:
-  inc fieldlo
-  inc cursor_x
-  lda cursor_x
-  cmp row_xend
-  bcc do_tile
-  inc cursor_y
-  lda cursor_y
-  cmp #FIELD_HT
-  bcc do_row
-  
+    maybe_indoor_furni:
+      jsr find_furni_tile_a
+      bmi skip_tile
+      ora #$00
+      bne skip_tile  ; disregard tiles other than top left corner
+      sty cur_furni
+      ldy #SHOPITEMS_SIZE
+      lda (itemdatalo),y
+      sta cur_furni_size
+      and #SHOPITEMS_INDOOR
+      beq skip_tile  ; if not indoor, fail
+      lda cur_furni
+      jsr find_furni_main_rot
+      cmp #NUM_FURNIS_NONWEAPON
+      bcs skip_tile  ; if weapon, fail
+      sta cur_furni
+      jsr get_furni_points
+    add_points:
+      clc
+      adc ratinglo
+      sta ratinglo
+      bcc skip_tile
+      inc ratinghi
+    skip_tile:
+      inc fieldlo
+      inc cursor_x
+      lda cursor_x
+      cmp row_xend
+      bcc do_tile
+    inc cursor_y
+    lda cursor_y
+    cmp #FIELD_HT
+    bcc do_row
+
   ; Add bonuses for having full sets of each group
   ldy #(HRA_NUM_GROUPS - 1) * 2
-group_loop:
-  lda group_defs+1,y
-  sta row_xend
-  ldx group_defs,y
-group_member_loop:
-  lda owned_items,x
-  bpl skip_group
-  inx
-  dec row_xend
-  bne group_member_loop
-  lda #25
-  clc
-  adc ratinglo
-  sta ratinglo
-  bcc skip_group
-  inc ratinghi 
-skip_group:
-  dey
-  dey
-  bpl group_loop
+  group_loop:
+    lda group_defs+1,y
+    sta row_xend
+    ldx group_defs,y
+    group_member_loop:
+      lda owned_items,x
+      bpl skip_group
+      inx
+      dec row_xend
+      bne group_member_loop
+    lda #FULL_GROUP_BONUS
+    clc
+    adc ratinglo
+    sta ratinglo
+    bcc skip_group
+      inc ratinghi
+    skip_group:
+    dey
+    dey
+    bpl group_loop
   rts
-
 .endproc
 
 ;;
-; Finds walls 
+; Finds walls
 ; @param fieldlo square up and to the left of furniture
 ; @param cursor_y (must be consistent with fieldlo)
 ; @param cur_furni_size size bits of furni
@@ -225,13 +227,13 @@ walls_found = $0C
   lda #34
   bit cur_furni_size
   bpl :+
-  lda #66  ; Tall: add a row
-:
+    lda #66  ; Tall: add a row
+  :
   bvc :+
-  ora #1  ; Wide: add a column
-:
+    ora #1  ; Wide: add a column
+  :
   sta y_origin
-  
+
   ; Find X origin (offset of cell below the lower right corner
   ; of a furni)
   clc
@@ -241,64 +243,64 @@ walls_found = $0C
   ; If Y = 0, skip north side
   ldy cursor_y
   bne skip_n_not_top_row
-  dec skip_n
-  bne skip_n_determined
-skip_n_not_top_row:
+    dec skip_n
+    bne skip_n_determined
+  skip_n_not_top_row:
 
-  ; If Y + (furni height - 1) >= (field height - 1), skip south side
-  bit cur_furni_size
-  bpl :+
-  iny
-:
-  cpy #FIELD_HT-1
-  bcc skip_n_determined
-  dec skip_n
-  ; Move the south side pointer (x_origin) to the north side and
-  ; skip the north side.  This is cheaper in the inner loop than
-  ; separate logic to skip the north and south sides.
-  lda x_origin
-  and #%00011111
-  sta x_origin
-skip_n_determined:
+    ; If Y + (furni height - 1) >= (field height - 1), skip south side
+    bit cur_furni_size
+    bpl :+
+      iny
+    :
+    cpy #FIELD_HT-1
+    bcc skip_n_determined
+    dec skip_n
+    ; Move the south side pointer (x_origin) to the north side and
+    ; skip the north side.  This is cheaper in the inner loop than
+    ; separate logic to skip the north and south sides.
+    lda x_origin
+    and #%00011111
+    sta x_origin
+  skip_n_determined:
 
   ; Check the west and east sides
   lda #NEAR_WE_WALL
   sta cur_side
   ldy y_origin
-we_loop:
-  jsr handle_tile  ; Y = east side
-  tya
-  and #%11100000
-  tay
-  jsr handle_tile  ; Y = west side
-  cpy #64    ; If not on the bottom row
-  bcc we_done
-  lda y_origin
-  sec
-  sbc #32
-  sta y_origin
-  tay
-  bcs we_loop
-we_done:
+  we_loop:
+    jsr handle_tile  ; Y = east side
+    tya
+    and #%11100000
+    tay
+    jsr handle_tile  ; Y = west side
+    cpy #64    ; If not on the bottom row
+    bcc we_done
+    lda y_origin
+    sec
+    sbc #32
+    sta y_origin
+    tay
+    bcs we_loop
+  we_done:
 
   ; Check the north and south sides
   lda #NEAR_NS_WALL
   sta cur_side
-ns_loop:
-  ldy x_origin
-  jsr handle_tile  ; Y = south side (or north if along S wall)
-  tya
-  and #%00011111
-  tay
-  bit skip_n
-  bmi :+
-  jsr handle_tile  ; Y = north side
-:
-  cpy #2    ; If not on the left column
-  bcc ns_done
-  dec x_origin
-  bcs ns_loop
-ns_done:
+  ns_loop:
+    ldy x_origin
+    jsr handle_tile  ; Y = south side (or north if along S wall)
+    tya
+    and #%00011111
+    tay
+    bit skip_n
+    bmi :+
+      jsr handle_tile  ; Y = north side
+    :
+    cpy #2    ; If not on the left column
+    bcc ns_done
+    dec x_origin
+    bcs ns_loop
+  ns_done:
 
   lda walls_found
   rts
@@ -308,17 +310,17 @@ handle_tile:
   and #%11111110
   cmp #CONNBLKS_DOORWE
   bne not_door
-  lda #NEAR_DOOR
-  bne have_wall_found
-not_door:
-  and #%11110000
-  cmp #CONNBLKS_ROW
-  bne not_wall_either
-  lda cur_side
-have_wall_found:
-  ora walls_found
-  sta walls_found
-not_wall_either:
+    lda #NEAR_DOOR
+    bne have_wall_found
+  not_door:
+    and #%11110000
+    cmp #CONNBLKS_ROW
+    bne not_wall_either
+    lda cur_side
+  have_wall_found:
+    ora walls_found
+    sta walls_found
+  not_wall_either:
   rts
 .endproc
 
@@ -332,42 +334,42 @@ not_wall_either:
   ldx cur_furni
   sec
   ror owned_items,x
-  
+
   ; TO DO: Furni-to-furni proximity bonuses
 
   ; Wall and door proximity bonuses for indoor furni
   cpx #item_ficus
   bne not_ficus
-  jsr find_walls_around_size
-  and #NEAR_WE_WALL|NEAR_NS_WALL
-  beq have_wall_prox_bonus  ; No walls: 0 pts
-  cmp #1
-  bne have_wall_prox_bonus  ; NS: 2; NS + WE: 2
-  asl a
-  bne have_wall_prox_bonus  ; WE: 2
-not_ficus:
+    jsr find_walls_around_size
+    and #NEAR_WE_WALL|NEAR_NS_WALL
+    beq have_wall_prox_bonus  ; No walls: 0 pts
+    cmp #1
+    bne have_wall_prox_bonus  ; NS: 2; NS + WE: 3
+    asl a
+    bne have_wall_prox_bonus  ; WE: 2
+  not_ficus:
 
   cpx #item_rug
   bne not_rug
-  jsr find_walls_around_size
-  and #NEAR_DOOR
-  beq have_wall_prox_bonus
-wall_prox_give3:
-  lda #3
-  bne have_wall_prox_bonus
-not_rug:
+    jsr find_walls_around_size
+    and #NEAR_DOOR
+    beq have_wall_prox_bonus
+  wall_prox_give3:
+    lda #3
+    bne have_wall_prox_bonus
+  not_rug:
 
   cpx #item_bookcase
   bne wall_prox_give0
   jsr find_walls_around_size
   and #NEAR_WE_WALL|NEAR_NS_WALL
   bne wall_prox_give3
-wall_prox_give0:
-  lda #0
-have_wall_prox_bonus:
+  wall_prox_give0:
+    lda #0
+  have_wall_prox_bonus:
   clc
-  adc #7  ; add base rate of 7 points per indoor furni
-  pha     ; add 5 for nearby furniture in the same group
+  adc #PTS_PER_INDOOR  ; add base rate
+  pha                  ; add 5 for nearby furniture in the same group
   ldx cur_furni
   jsr scan_same_group
   sta cur_piece_hi+1
@@ -397,34 +399,35 @@ grouplen = next_piece+1
   lda #0
   sta doublecount_tile
   ldy #HRA_MAX_GROUP_SIZE-1
-clrgrp:
-  sta group_items,y
-  dey
-  bpl clrgrp
-  
+  clrgrp:
+    sta group_items,y
+    dey
+    bpl clrgrp
+
   ; Find group that contains furni X
   ldy #(HRA_NUM_GROUPS - 1) * 2
-findgrp:
-  lda group_defs,y
-  sta groupstart
-  lda group_defs+1,y
-  sta grouplen
-  txa
-  sec
-  sbc groupstart
-  cmp grouplen
-  bcc found_group
-  dey
-  dey
-  bpl findgrp
+  findgrp:
+    lda group_defs,y
+    sta groupstart
+    lda group_defs+1,y
+    sta grouplen
+    txa
+    sec
+    sbc groupstart
+    cmp grouplen
+    bcc found_group
+    dey
+    dey
+    bpl findgrp
   lda #0  ; No group, no points
   rts
+
 found_group:
   tay
   lda #1
   sta group_items,y
 
-  ; Calculate bounding box of search  
+  ; Calculate bounding box of search
   ; 2 to left of left side
   lda cursor_x
   cmp #3
@@ -433,7 +436,7 @@ found_group:
 :
   sbc #2
   sta left
-  
+
   ; 2 to right of right side (incl. 1 normally plus 1 more for wide)
   lda cur_furni_size
   and #$40
@@ -455,7 +458,7 @@ found_group:
 :
   sbc #2
   sta tile_y
-  
+
   ; 2 below bottom (incl. 1 normally plus 1 more for tall)
   lda cur_furni_size
   cmp #$80
@@ -508,12 +511,12 @@ skiptile:
   lda tile_y
   cmp bottom
   bcc rowloop
-  
+
   ; now that we've scanned the surroundings,
   ; put the playfield pointer back on the cursor
   ldx #0
   jsr get_piece_top_left_corner
-  
+
   ; count other item types encountered: 5*max(0,sum(group_items)-1)
   lda group_items+2
   clc
@@ -521,13 +524,12 @@ skiptile:
   clc
   adc group_items+0
   beq no_points
-  clc
-  adc #$FF
-  sta bottom
-  asl a
-  asl a
-  adc bottom
-no_points:
-  rts  
+    clc
+    adc #$FF
+    sta bottom
+    asl a
+    asl a
+    adc bottom
+  no_points:
+  rts
 .endproc
-

@@ -148,17 +148,17 @@ not_shop_view:
   jmp buy_item
 notA:
   cmp #KEY_B
-  bcs isLeft
+  bcs backToStock
   lsr a
+  bcs nextPage  ; Right: next page
   lsr a
   bcc notLeft
-  
-  ; Left: Go to stock view
-isLeft:
-  lda #SFX_TURN_PAGE
-  jsr pently_start_sound
-  jmp setup_stock_view
-notLeft:
+  backToStock:
+    ; B or Left: Go to stock view
+    lda #SFX_TURN_PAGE
+    jsr pently_start_sound
+    jmp setup_stock_view
+  notLeft:
   
   lsr a
   bcc notDown
@@ -171,6 +171,7 @@ notLeft:
   lda form_pageitem,x
   cmp form_pagelen,x
   bcc notUp
+nextPage:
   lda #SFX_TURN_PAGE
   jsr pently_start_sound
   ldx cur_turn

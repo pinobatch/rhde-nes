@@ -190,11 +190,11 @@ form_shopparticlesz = unitzp24 + 16
 ; furnistock.s
 SHOPITEMS_ROTNEXT = $04
 SHOPITEMS_SIZE = $05
+  SHOPITEMS_TALL = $80
+  SHOPITEMS_WIDE = $40
+  SHOPITEMS_INDOOR = $20
 SHOPITEMS_TILE = $06
 SHOPITEMS_PRICE = $07
-SHOPITEMS_TALL = $80
-SHOPITEMS_WIDE = $40
-SHOPITEMS_INDOOR = $20
 .global player_inv
 .global setup_stock_view, stock_move_cursor, placement_move_cursor
 .global draw_two_stockitems, stock_draw_counts, stock_draw_cursor
