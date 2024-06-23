@@ -82,7 +82,17 @@ cur_furni_size = cur_piece_lo+1
 
 PTS_PER_INDOOR = 7
 PTS_PER_FLOWER = 2
+PTS_PER_PROXIMITY = 5
 FULL_GROUP_BONUS = 25
+
+PROX_RADIUS = 2
+
+; Tiles $52-$5F are furniture of height 1
+; Tiles $60-$6F are the top half of double-height furniture
+; Tiles $70-$7F are the bottom half of double-height furniture
+INDOOR_FURNI_MIN_TILE = $52
+INDOOR_FURNI_TOP_HALVES_MAX_TILE = $6C
+INDOOR_FURNI_MAX_TILE = $7C
 
 ;;
 ; Rates one house.
@@ -174,7 +184,8 @@ ratinghi = $0F
 
       ; This is what we must change to delay calculation
       ; to deter toilet spam.  See scoring_changes.md
-      jsr get_furni_points
+      jsr hra_score_furni_placement
+      jmp skip_tile
     add_points:
       clc
       adc ratinglo
@@ -192,6 +203,54 @@ ratinghi = $0F
     cmp #FIELD_HT
     bcc do_row
 
+  ; Cap the quantity of each furniture item to discourage hoarding
+  ldx #NUM_FURNIS_NONWEAPON-1
+  cap_loop:
+    txa
+    jsr seek_to_furni_a
+    ldy #SHOPITEMS_SIZE
+    lda (itemdatalo),y
+    and #SHOPITEMS_QTY_CAP_MASK
+    cmp owned_items,x
+    bcs :+
+      sta owned_items,x
+    :
+    dex
+    bpl cap_loop
+
+  ; Award 7 points for each item under the cap
+  lda owned_items+0
+  clc
+  ldx #NUM_FURNIS_NONWEAPON-1
+  sum_owned_loop:
+    adc owned_items,x
+    dex
+    bne sum_owned_loop
+  ldy #PTS_PER_INDOOR
+  jsr mul8
+  pha
+  lda $0000
+  clc
+  adc ratinglo
+  sta ratinglo
+  pla
+  adc ratinghi
+  sta ratinghi
+
+  ; Award placement and proximity bonuses per type
+  ldx #bonuses_end-placement_bonus-1
+  placement_bonus_loop:
+    lda placement_bonus,x
+    clc
+    adc ratinglo
+    sta ratinglo
+    lda #0
+    adc ratinghi
+    sta ratinghi
+    dex
+    bpl placement_bonus_loop
+
+
   ; Add bonuses for having full sets of each group
   ldy #(HRA_NUM_GROUPS - 1) * 2
   group_loop:
@@ -200,7 +259,7 @@ ratinghi = $0F
     ldx group_defs,y
     group_member_loop:
       lda owned_items,x
-      bpl skip_group
+      beq skip_group
       inx
       dec row_xend
       bne group_member_loop
@@ -216,6 +275,16 @@ ratinghi = $0F
     bpl group_loop
   rts
 .endproc
+
+.segment "RODATA"
+group_defs:
+  .byte item_table, 2   ; table, chair
+  .byte item_sofa, 2    ; sofa, bookcase
+  .byte item_fridge, 3  ; fridge, oven, trashcan
+  .byte item_sink, 3    ; sink, toilet, bathtub
+HRA_NUM_GROUPS = (* - group_defs) / 2
+
+.segment "CODE"
 
 ;;
 ; Finds walls
@@ -336,81 +405,71 @@ handle_tile:
 .endproc
 
 ;;
-; Gets the score associated with this item.
+; Counts this item and checks for placement and proximity bonuses.
 ; @param cur_furni identity of furni, rotated to home position
-; @param cur_furni_size size of (unrotated) furni
+; @param cur_furni_size size of original unrotated furni
 ; @param cursor_x, cursor_y, fieldlo positioned at furni's top left
-.proc get_furni_points
-  ; Mark as present for group bonus
+.proc hra_score_furni_placement
+  ; Count quantity of each item and mark as present for group bonus
   ldx cur_furni
-  sec
-  ror owned_items,x
+  inc owned_items,x
+  bne :+
+    dec owned_items,x
+  :
 
-  ; TO DO: Furni-to-furni proximity bonuses
-
-  ; Wall and door proximity bonuses for indoor furni
+  ; Placement bonuses for indoor furni based on wall and door proximity
   cpx #item_ficus
   bne not_ficus
     jsr find_walls_around_size
     and #NEAR_WE_WALL|NEAR_NS_WALL
-    beq have_wall_prox_bonus  ; No walls: 0 pts
+    beq have_placement_bonus  ; No walls: 0 pts
     cmp #1
-    bne have_wall_prox_bonus  ; NS: 2; NS + WE: 3
+    bne have_placement_bonus  ; NS: 2; NS + WE: 3
     asl a
-    bne have_wall_prox_bonus  ; WE: 2
+    bne have_placement_bonus  ; WE: 2
   not_ficus:
 
   cpx #item_rug
   bne not_rug
     jsr find_walls_around_size
     and #NEAR_DOOR
-    beq have_wall_prox_bonus
+    beq have_placement_bonus
   wall_prox_give3:
     lda #3
-    bne have_wall_prox_bonus
+    bne have_placement_bonus
   not_rug:
 
   cpx #item_bookcase
   bne wall_prox_give0
-  jsr find_walls_around_size
-  and #NEAR_WE_WALL|NEAR_NS_WALL
-  bne wall_prox_give3
+    jsr find_walls_around_size
+    and #NEAR_WE_WALL|NEAR_NS_WALL
+    bne wall_prox_give3
   wall_prox_give0:
     lda #0
-  have_wall_prox_bonus:
-  clc
-  adc #PTS_PER_INDOOR  ; add base rate
-  pha                  ; add 5 for nearby furniture in the same group
+  have_placement_bonus:
   ldx cur_furni
-  jsr scan_same_group
-  sta cur_piece_hi+1
-  pla
-  clc
-  adc cur_piece_hi+1
-  rts
-.endproc
+  cmp placement_bonus,x
+  bcs :+
+    sta placement_bonus,x
+  :
 
-.segment "RODATA"
-group_defs:
-  .byte item_table, 2   ; table, chair
-  .byte item_sofa, 2    ; sofa, bookcase
-  .byte item_fridge, 3  ; fridge, oven, trashcan
-  .byte item_sink, 3    ; sink, toilet, bathtub
-HRA_NUM_GROUPS = (* - group_defs) / 2
+  ; If the furni is in a group, scan for nearby furni to assign a
+  ; furni-to-furni proximity bonus
 
-.segment "CODE"
-.proc scan_same_group
 tile_x = $08
 tile_y = cursor_y + 1
 left = $09
 right = $0A
 bottom = $0B
-doublecount_tile = cur_piece_hi+1
 groupstart = next_piece+0
 grouplen = next_piece+1
 
+; For speed, ignore bottom halves except on the first scanned row
+ignore_bottomhalf = cur_piece_hi+1
+
+  lda #INDOOR_FURNI_MAX_TILE+1
+  sta ignore_bottomhalf
   lda #0
-  sta doublecount_tile
   ldy #HRA_MAX_GROUP_SIZE-1
   clrgrp:
     sta group_items,y
@@ -432,98 +491,95 @@ grouplen = next_piece+1
     dey
     dey
     bpl findgrp
-  lda #0  ; No group, no points
-  rts
+  rts  ; No group, no proximity bonus update
 
 found_group:
   tay
-  lda #1
+  lda #PTS_PER_PROXIMITY
   sta group_items,y
 
   ; Calculate bounding box of search
   ; 2 to left of left side
   lda cursor_x
-  cmp #3
+  cmp #LEFTMOST_X + PROX_RADIUS
   bcs :+
-  lda #3+1  ; plus 1 for carry
-:
-  sbc #2
+    lda #LEFTMOST_X + PROX_RADIUS + 1  ; plus 1 for carry clear
+  :
+  sbc #PROX_RADIUS
   sta left
 
-  ; 2 to right of right side (incl. 1 normally plus 1 more for wide)
+  ; 2 to right of right side (incl. 1 normally plus 1 more if wide)
   lda cur_furni_size
-  and #$40
-  cmp #$40
+  and #SHOPITEMS_WIDE
+  cmp #1  ; CF=1 if wide
   lda cursor_x
   adc #0
-  cmp #26
+  cmp #RIGHTMOST_X - PROX_RADIUS
   bcc :+
-  lda #26-1  ; minus 1 for carry
-:
-  adc #3
+    lda #RIGHTMOST_X - PROX_RADIUS - 1  ; minus 1 for carry set
+  :
+  adc #PROX_RADIUS + 1
   sta right
 
   ; 2 above top
   lda cursor_y
-  cmp #2
+  cmp #PROX_RADIUS
   bcs :+
-  lda #2+1  ; plus 1 for carry
-:
-  sbc #2
+    lda #PROX_RADIUS + 1  ; plus 1 for carry clear
+  :
+  sbc #PROX_RADIUS
   sta tile_y
 
-  ; 2 below bottom (incl. 1 normally plus 1 more for tall)
+  ; 2 below bottom (incl. 1 normally plus 1 more if tall)
   lda cur_furni_size
-  cmp #$80
+  .assert SHOPITEMS_TALL = $80, error, "will need to use and/cmp instead"
+  asl a  ; CF=1 if wide
   lda cursor_y
   adc #0
-  cmp #FIELD_HT-3
+  cmp #FIELD_HT - 1 - PROX_RADIUS
   bcc :+
-  lda #FIELD_HT-3-1  ; minus 1 for carry
-:
-  adc #3
+    lda #FIELD_HT - 1 - PROX_RADIUS - 1  ; minus 1 for carry set
+  :
+  adc #PROX_RADIUS + 1
   sta bottom
 
-rowloop:
-  lda tile_y
-  jsr seek_fielddata_row_a
-  ldy left
-tileloop:
-  sty tile_x
-  lda (fieldlo),y
-  cmp #$52  ; only test tiles that are likely furni
-  bcc skiptile
-  jsr find_furni_tile_a
-  bmi skiptile  ; Y=furni id, A=offset in YYYYXXXX
-  and doublecount_tile
-  bne skiptile
-  ; At this point we have furniture Y.  Find its main rotation and
-  ; see if it's one of the others in this group.
-  tya
-  jsr find_furni_main_rot
-  sec
-  sbc groupstart
-  cmp grouplen
-  bcs skiptile
-  tay
-  lda #1
-  sta group_items,y
+  rowloop:
+    lda tile_y
+    jsr seek_fielddata_row_a
+    ldy left
+    tileloop:
+      sty tile_x
+      lda (fieldlo),y
+      cmp #$52  ; only test tiles that are likely furni
+      bcc skiptile
+      cmp ignore_bottomhalf
+      bcs skiptile
+      jsr find_furni_tile_a
+      bmi skiptile  ; Y=furni id, A=offset in YYYYXXXX
+      ; At this point we have furniture Y.  Find its main rotation
+      ; and see if it's one of the others in this group.
+      tya
+      jsr find_furni_main_rot
+      sec
+      sbc groupstart
+      cmp grouplen
+      bcs skiptile
+      tay
+      lda #PTS_PER_PROXIMITY
+      sta group_items,y
 
-skiptile:
-  ldy tile_x
-  iny
-  cpy right
-  bcc tileloop
-  ; on the next row, accept not-left-column of furniture,
-  ; but reject not-top-row
-  lda doublecount_tile
-  and #$01
-  ora #$10
-  sta doublecount_tile
-  inc tile_y
-  lda tile_y
-  cmp bottom
-  bcc rowloop
+    skiptile:
+      ldy tile_x
+      iny
+      cpy right
+      bcc tileloop
+    ; on the next row, reject bottom halves of furniture
+    lda #INDOOR_FURNI_TOP_HALVES_MAX_TILE + 1
+    sta ignore_bottomhalf
+    inc tile_y
+    lda tile_y
+    cmp bottom
+    bcc rowloop
 
   ; now that we've scanned the surroundings,
   ; put the playfield pointer back on the cursor
@@ -531,18 +587,27 @@ skiptile:
   jsr get_piece_top_left_corner
 
   ; count other item types encountered: 5*max(0,sum(group_items)-1)
-  lda group_items+2
-  clc
-  adc group_items+1
-  clc
-  adc group_items+0
-  beq no_points
+  lda #<-PTS_PER_PROXIMITY
+  .repeat ::HRA_MAX_GROUP_SIZE, I
     clc
-    adc #$FF
-    sta bottom
-    asl a
-    asl a
-    adc bottom
-  no_points:
+    adc group_items+I
+  .endrepeat
+  bmi is_not_increase  ; should this ever happen?
+
+  ; Chair bonus for being near a table is cumulative with a cap.
+  ; Others are plain maximum.
+  ldx cur_furni
+  cpx #item_chair
+  bne have_noncumulative_bonus
+    clc
+    adc proximity_bonus,x
+    cmp #2 * PTS_PER_PROXIMITY
+    bcc have_noncumulative_bonus
+    lda #2 * PTS_PER_PROXIMITY
+  have_noncumulative_bonus:
+  cmp proximity_bonus,x
+  bcc is_not_increase
+    sta proximity_bonus,x
+  is_not_increase:
   rts
 .endproc

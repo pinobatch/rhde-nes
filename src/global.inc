@@ -193,6 +193,7 @@ SHOPITEMS_SIZE = $05
   SHOPITEMS_TALL = $80
   SHOPITEMS_WIDE = $40
   SHOPITEMS_INDOOR = $20
+  SHOPITEMS_QTY_CAP_MASK = $1F
 SHOPITEMS_TILE = $06
 SHOPITEMS_PRICE = $07
 .global player_inv
@@ -256,7 +257,7 @@ MAX_DROPPED_FURNI = 8
 .import donut_decompress_block
 
 ; math.s
-.import getAngle
+.import mul8, getAngle
 .import missileSine, missileCosine
 
 ; vwfdraw.s

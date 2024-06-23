@@ -451,11 +451,12 @@ fill_pageitems_done = find_affordable_shopitems::done
 ; Physical format:
 ; $00-$03 unassigned
 ; $04     Next item in rotation cycle
-; $05     bit 7: tall; bit 6: wide; bit 5: indoor
+; $05     bit 7: tall; bit 6: wide; bit 5: indoor;
+;         bits 0-4: HRA quantity cap
 ; $06     base tile number
 ; $07     price in cio (1-250)
 ; $08-$0F name in nul-term ASCII
-.macro shopitem name, price, width, height, indoor, tileno, rotnext
+.macro shopitem name, price, width, height, indoor, qty_cap, tileno, rotnext
 .local itemnum
 itemnum = (* - shopitems) / 16
   .assert itemnum < 64, error, "more than 64 items cause Bad Things"
@@ -466,7 +467,7 @@ itemnum = (* - shopitems) / 16
   .else
     .byte .ident(.concat("item_", rotnext))
   .endif
-  .byte (((height) - 1) << 7) | (((width) - 1) << 6) | ((indoor) << 5)
+  .byte (((height) - 1) << 7) | (((width) - 1) << 6) | ((indoor) << 5) | (qty_cap)
   .byte tileno, price
   .byte name
   .res 8 - .strlen(name), $00
@@ -474,29 +475,29 @@ itemnum = (* - shopitems) / 16
 ; Rotated furnis are beyond NUM_FURNIS.  They cannot be purchased,
 ; and trying to purchase one follows a rotnext chain until the number
 ; is less than NUM_FURNIS
-;          name       prc  w  h ind tile rotnext
+;          name       prc  w  h ind qty tile rotnext
 shopitems:
-  shopitem "bed",      85, 2, 2, 1, $60
-  shopitem "table",    72, 1, 1, 1, $5F
-  shopitem "chair",    35, 1, 2, 1, $63
-  shopitem "rug",      65, 1, 2, 1, $69, "rug_rot"
-  shopitem "sofa",     35, 2, 1, 1, $5A
-  shopitem "bookcase", 90, 1, 2, 1, $62
-  shopitem "fridge",   48, 1, 2, 1, $65
-  shopitem "oven",     72, 1, 2, 1, $66
-  shopitem "trashcan", 20, 1, 1, 1, $5e
-  shopitem "sink",     80, 1, 2, 1, $67
-  shopitem "toilet",   72, 1, 2, 1, $68
-  shopitem "bathtub",  50, 2, 1, 1, $58
-  shopitem "ficus",    50, 1, 2, 1, $64
-  shopitem "fence",     8, 1, 1, 0, $38
-  shopitem "flowers",   3, 1, 1, 0, $28
-  shopitem "silo",    120, 2, 2, 0, $6D
-  shopitem "bat",      20, 1, 1, 1, $57
+  shopitem "bed",      85, 2, 2, 1,  3, $60
+  shopitem "table",    72, 1, 1, 1,  1, $5F
+  shopitem "chair",    35, 1, 2, 1,  3, $63
+  shopitem "rug",      65, 1, 2, 1,  2, $69, "rug_rot"
+  shopitem "sofa",     35, 2, 1, 1,  1, $5A
+  shopitem "bookcase", 90, 1, 2, 1,  2, $62
+  shopitem "fridge",   48, 1, 2, 1,  1, $65
+  shopitem "oven",     72, 1, 2, 1,  1, $66
+  shopitem "trashcan", 20, 1, 1, 1,  1, $5e
+  shopitem "sink",     80, 1, 2, 1,  1, $67
+  shopitem "toilet",   72, 1, 2, 1,  1, $68
+  shopitem "bathtub",  50, 2, 1, 1,  1, $58
+  shopitem "ficus",    50, 1, 2, 1,  2, $64
+  shopitem "fence",     8, 1, 1, 0,  0, $38
+  shopitem "flowers",   3, 1, 1, 0,  0, $28
+  shopitem "silo",    120, 2, 2, 0,  0, $6D
+  shopitem "bat",      20, 1, 1, 1,  0, $57
 shopitems_end:
-  shopitem "flowers2", 65, 1, 1, 0, $29, "flowers"
-  shopitem "rug_rot",  65, 2, 1, 1, $5C, "rug"
-  shopitem "siloused", 65, 1, 2, 0, $6F, "silo"
+  shopitem "flowers2", 65, 1, 1, 0,  0, $29, "flowers"
+  shopitem "rug_rot",  65, 2, 1, 1,  0, $5C, "rug"
+  shopitem "siloused", 65, 1, 2, 0,  0, $6F, "silo"
 allitems_end:
 
 ;.out .sprintf("rug is #%03d", item_rug)
@@ -578,16 +579,22 @@ skip_add:
 .endproc
 
 ;;
-; Loads the address of itemdata for item A on the current page
+; Loads the address of itemdata for entry A on the current page
 ; into $00-$01.
-; @param C clear for player 1, set for player 2
+; @param CF clear for player 1, set for player 2
 ; @return Y: item number
 .proc seek_to_pageitem_a
   rol a
   tay
   lda form_pageitems,y
   tay
+  ; fall through
 .endproc
+
+;;
+; Loads the address of itemdata for item type A into $00-$01.
+; @param A item ID
+; @return XY unchanged
 .proc seek_to_furni_a
 itemdatalo = $00
 itemdatahi = $01

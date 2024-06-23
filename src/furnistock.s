@@ -45,37 +45,39 @@ player_inv: .res 2 * NUM_FURNIS
   and #KEY_B
   beq not_selling
   
-  ; Remove one from inventory
-  ; (no DEC a,X)
-  lda player_inv,y
-  sec
-  sbc #1
-  sta player_inv,y
+    ; Remove one from inventory
+    lda player_inv,y
+    sec
+    sbc #1
+    sta player_inv,y
   
-  ; And add 1/4 (rounded up) of the price of the item
-  tya
-  lsr a
-  jsr seek_to_furni_a
-  ldy #SHOPITEMS_PRICE
-  lda (0),y
-  lsr a
-  lsr a  ; carry = rounding
-  adc cash_lo,x
-  sta cash_lo,x
-  bcc :+
-    inc cash_hi,x
-  :
+    ; And add 1/4 (rounded up) of the price of the item
+    tya
+    lsr a
+    jsr seek_to_furni_a
+    ldy #SHOPITEMS_PRICE
+    lda (0),y
+    lsr a
+    lsr a  ; carry = rounding
+    adc cash_lo,x
+    sta cash_lo,x
+    bcc :+
+      inc cash_hi,x
+    :
 
-  ; Finally trigger a sound effect and a form update
-  lda #DIRTY_FORM
-  ora side_dirty,x
-  sta side_dirty,x
-  lda #SFX_SCANBEEP
-  jmp pently_start_sound
+    ; Play a sound effect and update the form
+    lda #DIRTY_FORM
+    ora side_dirty,x
+    sta side_dirty,x
+    lda #SFX_SCANBEEP
+    jmp pently_start_sound
+  not_selling:
 
-not_selling:
+  ; A on stock: Place this item
   ; lda #0  ; already 0 from the B button test
   sta form_desired_view,x
+  lda #SFX_TURN
+  jmp pently_start_sound
 bad_item:
   rts
 notA:
@@ -202,7 +204,6 @@ switch_to_pickup:
   sta form_desired_view,x
   rts
 .endproc
-
 
 .proc setup_stock_view
   ldx cur_turn
@@ -336,25 +337,25 @@ itemdata = $00
   ; Seek to area near cursor (get_piece_top_left_corner)
   jsr get_piece_top_left_corner
   lda placement_item,x
-  bmi :+
-  jmp furnish_place_piece
-:
+  bmi item_is_handtruck
+    jmp furnish_place_piece
+  item_is_handtruck:
   ; Handle pickup
   jsr find_furni_at_cursor
   bpl found_furni
-invalid_furni:
-  rts
-found_furni:
+  invalid_furni:
+    rts
+  found_furni:
   rol a  ; $20: move up; $02: move left; $01: use outdoor tile
   cmp #$20
   bcc :+
-  dec cursor_y,x
-  and #$03
-:
+    dec cursor_y,x
+    and #$03
+  :
   cmp #$02
   bcc :+
-  dec cursor_x,x
-:
+    dec cursor_x,x
+  :
   tya
   cmp #NUM_ALL_FURNIS
   bcs invalid_furni
@@ -378,7 +379,8 @@ found_furni:
   and #1
   tax
   .if ::PICKUP_GOES_TO_PLACEMENT
-    rts
+    lda #SFX_TURN
+    jmp pently_start_sound
   .else
     lda #SFX_TURN
     jsr pently_start_sound
@@ -391,7 +393,7 @@ found_furni:
 ; boundary between primary rotations and alternate rotations.)
 ; @param A furniture ID
 ; @return A = ID of primary rotation; $0000 points to new furni;
-; CF = 0 for valid, 1 for not
+; CF = 0 for valid, 1 for not; X unchanged; Y clobbered
 .proc find_furni_main_rot
 itemdata = $00
   cmp #NUM_ALL_FURNIS

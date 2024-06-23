@@ -177,8 +177,7 @@ Anti-hoarding
 
 One of our testers was spamming toilets and sinks to farm their
 proximity bonus.  We should probably cap that to encourage players
-to incorporate a larger fraction of the necessities of life and to
-plant a garden.
+to incorporate more necessities of life and to plant a garden.
 
 The first pass will no longer tally score for furniture.  Instead,
 it counts furniture in three arrays of length `NUM_FURNIS_NONWEAPON`
