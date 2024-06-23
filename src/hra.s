@@ -66,16 +66,18 @@
 ; fieldptr = get_top_left_corner(cursor_x[0], cursor_y[0])
 ; return (sum(group_items) - 1) * 5
 ;
-; Worked example in design doc
+; Worked example of original algorithm in docs/scoring_changes.md
 
-HRA_NUM_GROUPS = 4
 HRA_MAX_GROUP_SIZE = 3
-owned_items    = form_pageitems
-group_items    = owned_items + NUM_FURNIS_NONWEAPON
+owned_items     = form_pageitems
+placement_bonus = owned_items + NUM_FURNIS_NONWEAPON
+proximity_bonus = placement_bonus + NUM_FURNIS_NONWEAPON
+bonuses_end     = proximity_bonus + NUM_FURNIS_NONWEAPON
+group_items    = bonuses_end
 NEAR_WE_WALL   = $01
 NEAR_NS_WALL   = $02
 NEAR_DOOR      = $04
-cur_furni = cur_piece_lo+0
+cur_furni      = cur_piece_lo+0
 cur_furni_size = cur_piece_lo+1
 
 PTS_PER_INDOOR = 7
@@ -92,18 +94,18 @@ itemdatalo = $00
 ratinglo = $0E
 ratinghi = $0F
 
-  ; Clear presence flag for each furni
-  ldx #NUM_FURNIS_NONWEAPON-1
+  ; Initialize the rating
+  lda #0
+  sta cursor_y
+  sta ratinglo
+  sta ratinghi
+
+  ; Clear counts and bonuses for each furni type
+  ldx #bonuses_end - 1 - owned_items
   clrpresence:
     sta owned_items,x
     dex
     bpl clrpresence
-
-  ; Initialize the rating
-  inx
-  stx cursor_y
-  stx ratinglo
-  stx ratinghi
 
   do_row:
     ; Establish the boundaries of this side
@@ -148,6 +150,12 @@ ratinghi = $0F
       bne add_points
 
     maybe_indoor_furni:
+      ; cur_furni, offset, itemdata = find_furni_tile_a(tile_id)
+      ; if cur_furni < 0 or offset != 0: continue
+      ; cur_furni_size = itemdata.size
+      ; if not (cur_furni_size & SHOPITEMS_INDOOR): continue
+      ; cur_furni = find_furni_main_rot(cur_furni)
+      ; if cur_furni >= NUM_FURNIS_NONWEAPON: continue
       jsr find_furni_tile_a
       bmi skip_tile
       ora #$00
@@ -163,6 +171,9 @@ ratinghi = $0F
       cmp #NUM_FURNIS_NONWEAPON
       bcs skip_tile  ; if weapon, fail
       sta cur_furni
+
+      ; This is what we must change to delay calculation
+      ; to deter toilet spam.  See scoring_changes.md
       jsr get_furni_points
     add_points:
       clc
@@ -385,6 +396,8 @@ group_defs:
   .byte item_sofa, 2    ; sofa, bookcase
   .byte item_fridge, 3  ; fridge, oven, trashcan
   .byte item_sink, 3    ; sink, toilet, bathtub
+HRA_NUM_GROUPS = (* - group_defs) / 2
+
 .segment "CODE"
 .proc scan_same_group
 tile_x = $08

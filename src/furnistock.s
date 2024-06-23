@@ -390,7 +390,8 @@ found_furni:
 ; Finds the primary rotation of a furniture ID.  (NUM_FURNIS is the
 ; boundary between primary rotations and alternate rotations.)
 ; @param A furniture ID
-; @return A = ID of primary rotation; C = 0 for valid, 1 for not
+; @return A = ID of primary rotation; $0000 points to new furni;
+; CF = 0 for valid, 1 for not
 .proc find_furni_main_rot
 itemdata = $00
   cmp #NUM_ALL_FURNIS
@@ -655,7 +656,7 @@ ym1times32 = * - 1
 ; Finds which furniture item the tile is part of.
 ; @param A tile number ($00-$7F)
 ; @return Y: furni id; A: offset from base tile number (YYYYXXXX);
-; flags: BPL if valid furni
+; $0000 points to furni struct; NF=0 if valid furni
 .proc find_furni_tile_a
 itemdatalo = $00
 itemdatahi = $01
