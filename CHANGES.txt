@@ -1,3 +1,23 @@
+0.08 (Expected third quarter 2024)
+* Race select: make poli less tall to match in-game appearance
+* Furnish > Shop: autorepeat for Up and Down
+* Furnish > Shop: Right goes to next page
+* Furnish > Stock: when picking up furniture or selecting item from
+  stock, play pickup sound effect
+* HRA: discourage hoarding by applying a cap to count of each item
+  and counting only maximum placement bonus for each type
+* Battle: don't allow moving unit onto non-passable cell
+* Battle: when at silo, use round cursor to distinguish from movement
+  cursor
+* Battle: when at silo, press Select or B+A to tag out
+* Battle: when tagging to unit facing silo that has been opened,
+  reopen silo
+* Battle: when reopening silo, preserve cursor position
+* Furnish, Battle: make phases 50 percent longer
+* Furnish, Battle: if both players hold B for 1 second, end the phase
+* Reduce magic numbers in source code
+* Build with ld65 debug symbols for Mesen
+
 0.07 (2019-04-15)
 * Raise cap to to 8 rockets per side
 * Replace build phase music

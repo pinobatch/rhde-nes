@@ -76,7 +76,7 @@ UNIT_STATE_DIR       = $30
   lda #COMBAT_PHASE_DURATION
   sta phase_seconds
   ldx #2 * MAX_UNITS - 1
-  unitloop:
+  unit_init_loop:
     lda #$00
     sta unit_move_vector,x
     sta unit_state_time,x
@@ -86,7 +86,7 @@ UNIT_STATE_DIR       = $30
     sta unit_state,x
     sta unit_carry_item,x
     dex
-    bpl unitloop
+    bpl unit_init_loop
 
   ; 2014-06-27: Skip the round if no beds are present
   jsr count_beds

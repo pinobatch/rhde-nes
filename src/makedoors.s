@@ -132,7 +132,7 @@ move_one:
   lsr a
   bcc notRight
   lda cursor_x,x
-  cmp #RIGHTMOST_X-1
+  cmp #RIGHTMOST_X
   bcs :+
     inc cursor_x,x
   :
